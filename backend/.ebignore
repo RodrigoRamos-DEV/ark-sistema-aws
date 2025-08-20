@@ -1,0 +1,9 @@
+node_modules/
+.git/
+.env
+*.log
+uploads/
+test-*.js
+backup-*.sql
+create-aws-tables.js
+restore-to-aws.js

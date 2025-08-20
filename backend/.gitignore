@@ -1,0 +1,8 @@
+# Ignorar o ficheiro de variáveis de ambiente que contém as senhas
+.env
+
+# Ignorar a pasta de ficheiros de utilizadores
+/uploads
+
+# Ignorar a pasta de dependências
+/node_modules

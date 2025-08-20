@@ -1,0 +1,59 @@
+/* Responsividade da Feira */
+@media (max-width: 768px) {
+  .feira-filters {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .feira-grid {
+    grid-template-columns: 1fr !important;
+    gap: 15px !important;
+  }
+  
+  .product-card {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  .product-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  
+  .product-actions button {
+    width: 100% !important;
+  }
+  
+  .map-container {
+    height: 250px !important;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .btn-group {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .btn-group button {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-card {
+    margin: 0 10px !important;
+  }
+  
+  .feira-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
+  }
+  
+  .feira-header h2 {
+    font-size: 1.5em !important;
+  }
+}

@@ -1,0 +1,155 @@
+/* Tooltip Profissional */
+.tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip-content {
+  position: absolute;
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: tooltipFadeIn 0.2s ease-out;
+  pointer-events: none;
+}
+
+.dark-mode .tooltip-content {
+  background: #555;
+  color: #f8f9fa;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Posicionamento */
+.tooltip-top {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+}
+
+.tooltip-bottom {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+}
+
+.tooltip-left {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 8px;
+}
+
+.tooltip-right {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 8px;
+}
+
+/* Setas */
+.tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.tooltip-top .tooltip-arrow {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #333;
+}
+
+.tooltip-bottom .tooltip-arrow {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #333;
+}
+
+.tooltip-left .tooltip-arrow {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 6px solid #333;
+}
+
+.tooltip-right .tooltip-arrow {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid #333;
+}
+
+.dark-mode .tooltip-top .tooltip-arrow {
+  border-top-color: #555;
+}
+
+.dark-mode .tooltip-bottom .tooltip-arrow {
+  border-bottom-color: #555;
+}
+
+.dark-mode .tooltip-left .tooltip-arrow {
+  border-left-color: #555;
+}
+
+.dark-mode .tooltip-right .tooltip-arrow {
+  border-right-color: #555;
+}
+
+/* Estilos profissionais para navbar */
+.navbar-center a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+.navbar-center a:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+  color: #ffffff !important;
+}
+
+.navbar-center a.active {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: #ffffff !important;
+}
+
+.navbar-center svg {
+  stroke: #ffffff !important;
+  fill: none !important;
+  color: #ffffff !important;
+}

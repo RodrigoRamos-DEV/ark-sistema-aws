@@ -1,0 +1,71 @@
+/* Responsividade para EmpresaDashboard */
+@media (max-width: 768px) {
+  .main-navbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 15px !important;
+    gap: 15px !important;
+  }
+  
+  .navbar-center {
+    justify-content: center !important;
+    order: 2;
+    width: 100% !important;
+  }
+  
+  .navbar-right {
+    order: 3;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  
+  .navbar-left {
+    order: 1;
+    text-align: center !important;
+  }
+  
+  .nav-tab {
+    flex: 1 !important;
+    min-width: 80px !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-center {
+    gap: 5px !important;
+  }
+  
+  .nav-tab {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+    min-width: 60px !important;
+  }
+  
+  .nav-tab span {
+    display: none !important;
+  }
+  
+  .navbar-right {
+    gap: 15px !important;
+  }
+  
+  .container {
+    padding: 10px !important;
+  }
+}
+
+/* Melhorar visibilidade dos botões */
+.nav-tab:hover {
+  background-color: var(--cor-hover) !important;
+}
+
+.nav-tab.active {
+  background-color: var(--cor-primaria) !important;
+  color: white !important;
+}
+
+/* Garantir que os ícones sejam visíveis */
+.nav-tab svg {
+  flex-shrink: 0;
+}
