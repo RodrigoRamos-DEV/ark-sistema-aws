@@ -30,8 +30,6 @@ const app = express();
 app.use(cors({
     origin: [
         'http://localhost:5173',
-        'https://ark-pro-app.onrender.com',
-        'https://ark-pro-backend.onrender.com',
         'https://main.drlr6t8qos3vx.amplifyapp.com'
     ],
     credentials: true,
