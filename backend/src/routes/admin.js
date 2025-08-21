@@ -12,10 +12,9 @@ router.get('/notifications', auth, async (req, res) => {
       return res.status(403).json({ message: 'Acesso negado' });
     }
 
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = require('../config/db');
 
-    const result = await pool.query(`
+    const result = await db.query(`
       SELECT * FROM admin_notifications 
       ORDER BY created_at DESC
     `);
@@ -37,8 +36,7 @@ router.post('/notifications', auth, async (req, res) => {
       return res.status(403).json({ message: 'Acesso negado' });
     }
 
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = require('../config/db');
 
     const { title, message, type, target_audience } = req.body;
 
@@ -49,7 +47,7 @@ router.post('/notifications', auth, async (req, res) => {
     `;
 
     const values = [title, message, type || 'info', target_audience || 'all', req.user.id];
-    const result = await pool.query(query, values);
+    const result = await db.query(query, values);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -76,17 +74,16 @@ router.delete('/notifications/:id', auth, async (req, res) => {
       return res.status(400).json({ message: 'ID de notificação inválido' });
     }
 
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = require('../config/db');
 
     // Primeiro, remover dispensas relacionadas
-    await pool.query(
+    await db.query(
       'DELETE FROM dismissed_notifications WHERE notification_id = $1',
       [notificationId]
     );
 
     // Depois, remover a notificação
-    const result = await pool.query(
+    const result = await db.query(
       'DELETE FROM admin_notifications WHERE id = $1 RETURNING id',
       [notificationId]
     );
@@ -108,8 +105,7 @@ router.delete('/notifications/:id', auth, async (req, res) => {
 // @access  Private
 router.get('/notifications/client', auth, async (req, res) => {
   try {
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = require('../config/db');
 
     const userType = req.user.clientType || 'empresa';
 
@@ -119,7 +115,7 @@ router.get('/notifications/client', auth, async (req, res) => {
       ORDER BY an.created_at DESC
     `;
 
-    const result = await pool.query(query, [userType]);
+    const result = await db.query(query, [userType]);
 
     res.json(result.rows);
   } catch (error) {
@@ -133,8 +129,7 @@ router.get('/notifications/client', auth, async (req, res) => {
 // @access  Private
 router.post('/notifications/dismiss', auth, async (req, res) => {
   try {
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = require('../config/db');
 
     const { notificationId } = req.body;
 
@@ -145,7 +140,7 @@ router.post('/notifications/dismiss', auth, async (req, res) => {
       RETURNING *
     `;
 
-    await pool.query(query, [req.user.id, notificationId]);
+    await db.query(query, [req.user.id, notificationId]);
 
     res.json({ message: 'Notificação dispensada' });
   } catch (error) {
