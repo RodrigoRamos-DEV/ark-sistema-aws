@@ -272,9 +272,9 @@ function AdminPage() {
                                 </div>
                                 <div>
                                     <h3>Próximas Renovações (30 dias)</h3>
-                                    {dashboardData.upcomingRenewals.length > 0 ? (
+                                    {(dashboardData.upcomingRenewals || []).length > 0 ? (
                                         <ul style={{listStyle: 'none', padding: 0}}>
-                                            {dashboardData.upcomingRenewals.map(client => (
+                                            {(dashboardData.upcomingRenewals || []).map(client => (
                                                 <li key={client.id} style={{display: 'flex', justifyContent: 'space-between', padding: '8px', borderBottom: '1px solid var(--cor-borda)'}}>
                                                     <span>{client.company_name}</span>
                                                     <strong>{new Date(client.license_expires_at).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong>
@@ -308,7 +308,7 @@ function AdminPage() {
                                             if (activeTab === 'produtores') return client.client_type === 'produtor';
                                             return true;
                                         }).map(client => {
-                                            const clientOnlineStatus = onlineStatus.find(status => status.id === client.id);
+                                            const clientOnlineStatus = (onlineStatus || []).find(status => status.id === client.id);
                                             const isOnline = clientOnlineStatus?.is_online || false;
                                             
                                             return (
