@@ -32,6 +32,7 @@ app.use(cors({
         'http://localhost:5173',
         'http://3.15.32.209:3000',
         'https://3.15.32.209:3000',
+        'https://main.drlr6t8qos3vx.amplifyapp.com',
         'https://ark-app.s3-website.amazonaws.com'
     ],
     credentials: true,
