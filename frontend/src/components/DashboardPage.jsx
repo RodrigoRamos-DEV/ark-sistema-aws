@@ -274,10 +274,10 @@ function DashboardPage() {
       </div>
 
       {/* Alertas */}
-      {dashboardData.alertas.length > 0 && (
+      {dashboardData.alertas && dashboardData.alertas.length > 0 && (
         <div className="card" style={{marginBottom: '30px'}}>
           <h3 style={{marginBottom: '15px'}}>🔔 Alertas e Notificações</h3>
-          {dashboardData.alertas.map((alerta, index) => (
+          {(dashboardData.alertas || []).map((alerta, index) => (
             <AlertCard
               key={index}
               type={alerta.tipo}
@@ -295,7 +295,7 @@ function DashboardPage() {
         <div className="card">
           <h3 style={{marginBottom: '20px'}}>📈 Vendas Diárias</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={dashboardData.vendas_diarias}>
+            <LineChart data={dashboardData.vendas_diarias || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="data" />
               <YAxis />
@@ -311,7 +311,7 @@ function DashboardPage() {
         <div className="card">
           <h3 style={{marginBottom: '20px'}}>🏆 Top Produtos</h3>
           <div style={{maxHeight: '300px', overflowY: 'auto'}}>
-            {dashboardData.produtos_mais_vendidos.map((produto, index) => (
+            {(dashboardData.produtos_mais_vendidos || []).map((produto, index) => (
               <div key={index} style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -358,7 +358,7 @@ function DashboardPage() {
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
-                data={dashboardData.clientes_top}
+                data={dashboardData.clientes_top || []}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -367,7 +367,7 @@ function DashboardPage() {
                 fill="#8884d8"
                 dataKey="valor"
               >
-                {dashboardData.clientes_top.map((entry, index) => (
+                {(dashboardData.clientes_top || []).map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
