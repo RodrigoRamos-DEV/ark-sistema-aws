@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
+import API_URL from '../apiConfig';
 
 const FavoritesManager = () => {
   const [favorites, setFavorites] = useState([]);
@@ -20,7 +21,7 @@ const FavoritesManager = () => {
       
       // Tentar buscar da API primeiro
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://ark-pro-backend.onrender.com'}/api/feira/produtos`, {
+      const response = await fetch(`${API_URL}/api/feira/produtos`, {
         headers: { 'x-auth-token': token }
       });
       
