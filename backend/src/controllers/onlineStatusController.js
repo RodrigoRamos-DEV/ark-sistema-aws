@@ -3,9 +3,11 @@ const db = require('../config/db');
 // Atualizar status online do usuário
 exports.updateOnlineStatus = async (req, res) => {
     try {
-        const clientId = req.user.clientId;
+        console.log('Heartbeat request - user:', req.user);
+        const clientId = req.user?.clientId;
         
         if (!clientId) {
+            console.log('Heartbeat error: Cliente não identificado');
             return res.status(400).json({ msg: 'Cliente não identificado.' });
         }
 
