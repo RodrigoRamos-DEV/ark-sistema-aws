@@ -27,8 +27,17 @@ const auth = require('./src/middleware/authMiddleware');
 const app = express();
 
 // Middlewares Globais
-// Removido a configuração específica de origin para o Heroku, pois o frontend será servido do mesmo domínio
-app.use(cors()); 
+const corsOptions = {
+  origin: [
+    'https://ark-sistema-d9711c405f21.herokuapp.com',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+app.use(cors(corsOptions)); 
 app.use(express.json());
 
 // Log de todas as requisições
