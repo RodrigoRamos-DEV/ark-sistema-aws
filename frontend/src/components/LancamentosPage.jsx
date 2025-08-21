@@ -572,20 +572,20 @@ function LancamentosPage() {
                         <label htmlFor="employeeId">Funcionário</label>
                         <select id="employeeId" name="employeeId" value={filters.employeeId} onChange={handleFilterChange}>
                             <option value="todos">Todos os Funcionários</option>
-                            {funcionarios.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                            {(funcionarios || []).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                         </select>
                     </div>
                     <div><label htmlFor="startDate">De</label><input type="date" id="startDate" name="startDate" value={filters.startDate} onChange={handleFilterChange} /></div>
                     <div><label htmlFor="endDate">Até</label><input type="date" id="endDate" name="endDate" value={filters.endDate} onChange={handleFilterChange} /></div>
                     {activeTab === 'vendas' ? (
                         <>
-                            <div><label htmlFor="product">Produto</label><select id="product" name="product" value={filters.product} onChange={handleFilterChange}><option value="todos">Todos</option>{items.produto.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
-                            <div><label htmlFor="buyer">Cliente</label><select id="buyer" name="buyer" value={filters.buyer} onChange={handleFilterChange}><option value="todos">Todos</option>{items.comprador.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
+                            <div><label htmlFor="product">Produto</label><select id="product" name="product" value={filters.product} onChange={handleFilterChange}><option value="todos">Todos</option>{(items.produto || []).map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
+                            <div><label htmlFor="buyer">Cliente</label><select id="buyer" name="buyer" value={filters.buyer} onChange={handleFilterChange}><option value="todos">Todos</option>{(items.comprador || []).map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
                         </>
                     ) : (
                         <>
-                            <div><label htmlFor="purchase">Compra</label><select id="purchase" name="purchase" value={filters.purchase} onChange={handleFilterChange}><option value="todos">Todas</option>{items.compra.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
-                            <div><label htmlFor="supplier">Fornecedor</label><select id="supplier" name="supplier" value={filters.supplier} onChange={handleFilterChange}><option value="todos">Todos</option>{items.fornecedor.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
+                            <div><label htmlFor="purchase">Compra</label><select id="purchase" name="purchase" value={filters.purchase} onChange={handleFilterChange}><option value="todos">Todas</option>{(items.compra || []).map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
+                            <div><label htmlFor="supplier">Fornecedor</label><select id="supplier" name="supplier" value={filters.supplier} onChange={handleFilterChange}><option value="todos">Todos</option>{(items.fornecedor || []).map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
                         </>
                     )}
                     <div>
