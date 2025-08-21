@@ -52,7 +52,7 @@ function AdminPage() {
             ]);
             setClients(clientsResponse.data);
             setDashboardData(dashboardResponse.data);
-            setOnlineStatus(onlineResponse.data);
+            setOnlineStatus(Array.isArray(onlineResponse.data) ? onlineResponse.data : []);
         } catch (error) { toast.error("Erro ao carregar dados do painel."); } 
         finally { setLoading(false); }
     };
@@ -62,7 +62,7 @@ function AdminPage() {
         // Atualizar status online a cada 30 segundos
         const interval = setInterval(() => {
             axios.get(`${API_URL}/api/online/status`, { headers: { 'x-auth-token': token } })
-                .then(response => setOnlineStatus(response.data))
+                .then(response => setOnlineStatus(Array.isArray(response.data) ? response.data : []))
                 .catch(() => {});
         }, 30000);
         return () => clearInterval(interval);
