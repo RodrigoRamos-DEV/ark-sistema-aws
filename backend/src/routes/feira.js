@@ -60,6 +60,48 @@ router.post('/upload', auth, upload.array('fotos', 4), async (req, res) => {
   }
 });
 
+// @route   GET /api/feira/produtos/publico
+// @desc    Listar todos os produtos da feira (público)
+// @access  Public
+router.get('/produtos/publico', async (req, res) => {
+  try {
+    const db = require('../config/db');
+
+    const query = `
+      SELECT fp.*, c.company_name as produtor_nome
+      FROM feira_produtos fp
+      LEFT JOIN clients c ON fp.client_id = c.id
+      WHERE fp.disponivel = true
+      ORDER BY fp.created_at DESC
+    `;
+
+    const result = await db.query(query);
+
+    const produtos = result.rows.map(row => ({
+      id: row.id,
+      nome: row.nome,
+      categoria: row.categoria,
+      quantidade: row.quantidade,
+      preco: row.preco,
+      fotos: row.fotos || [],
+      latitude: row.latitude,
+      longitude: row.longitude,
+      disponivel: row.disponivel,
+      produtor: row.produtor || row.produtor_nome,
+      whatsapp: row.whatsapp,
+      endereco: row.endereco,
+      descricao: row.descricao,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+
+    res.json(produtos);
+  } catch (error) {
+    console.error('Erro ao buscar produtos públicos:', error);
+    res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+});
+
 // @route   GET /api/feira/produtos
 // @desc    Listar produtos da feira
 // @access  Private
@@ -67,28 +109,29 @@ router.get('/produtos', auth, async (req, res) => {
   try {
     const db = require('../config/db');
 
-    let query = `
-      SELECT fp.*, u.company_name as produtor_nome
-      FROM feira_produtos fp
-      LEFT JOIN users u ON fp.user_id = u.id
-      WHERE fp.disponivel = true
-      ORDER BY fp.created_at DESC
-    `;
+    let query, result;
 
     // Se for produtor, mostrar apenas seus produtos
     if (req.user.clientType === 'produtor') {
       query = `
-        SELECT fp.*, u.company_name as produtor_nome
+        SELECT fp.*, c.company_name as produtor_nome
         FROM feira_produtos fp
-        LEFT JOIN users u ON fp.user_id = u.id
+        LEFT JOIN clients c ON fp.client_id = c.id
         WHERE fp.user_id = $1
         ORDER BY fp.created_at DESC
       `;
+      result = await db.query(query, [req.user.id]);
+    } else {
+      // Para empresas e outros tipos, mostrar todos os produtos disponíveis
+      query = `
+        SELECT fp.*, c.company_name as produtor_nome
+        FROM feira_produtos fp
+        LEFT JOIN clients c ON fp.client_id = c.id
+        WHERE fp.disponivel = true
+        ORDER BY fp.created_at DESC
+      `;
+      result = await db.query(query);
     }
-
-    const result = req.user.clientType === 'produtor' 
-      ? await db.query(query, [req.user.id])
-      : await db.query(query);
 
     // Converter para formato compatível com localStorage
     const produtos = result.rows.map(row => ({
@@ -131,15 +174,15 @@ router.post('/produtos', auth, async (req, res) => {
 
     const query = `
       INSERT INTO feira_produtos 
-      (nome, categoria, quantidade, preco, fotos, latitude, longitude, disponivel, user_id, produtor, whatsapp, endereco, descricao)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      (nome, categoria, quantidade, preco, fotos, latitude, longitude, disponivel, user_id, client_id, produtor, whatsapp, endereco, descricao)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `;
 
     const values = [
       nome, categoria, quantidade, preco, fotos,
       latitude, longitude, disponivel !== false,
-      req.user.id, req.user.companyName || req.user.name,
+      req.user.id, req.user.clientId, req.user.companyName || req.user.name,
       whatsapp, endereco, descricao
     ];
 

@@ -3,8 +3,9 @@ const router = express.Router();
 const dataController = require('../controllers/dataController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-// ROTA PÚBLICA (sem autenticação)
+// ROTAS PÚBLICAS (sem autenticação)
 router.get('/vitrine-publica', dataController.getVitrinePublica);
+router.get('/vitrine/produtos-publicos', dataController.getVitrinePublica);
 
 router.use(authMiddleware);
 

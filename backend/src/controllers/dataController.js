@@ -1452,7 +1452,7 @@ exports.getVitrinePublica = async (req, res) => {
                 pv.created_at, pv.updated_at
             FROM produtos_vitrine pv
             JOIN clients c ON pv.client_id = c.id
-            WHERE pv.disponivel = true AND c.client_type = 'produtor'
+            WHERE pv.disponivel = true
             ORDER BY pv.created_at DESC
         `);
         res.json(result.rows);
