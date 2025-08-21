@@ -9,8 +9,9 @@ const { v4: uuidv4 } = require('uuid');
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION || 'us-east-1'
+  region: process.env.AWS_REGION || 'sa-east-1'
 });
+const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || 'ark-pro-logos-clientes-rodrigo-ramos';
 
 // Configurar multer para upload
 const upload = multer({
@@ -30,7 +31,7 @@ const uploadToS3 = async (file) => {
   const fileName = `feira/${uuidv4()}-${Date.now()}.${file.originalname.split('.').pop()}`;
   
   const params = {
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Bucket: BUCKET_NAME,
     Key: fileName,
     Body: file.buffer,
     ContentType: file.mimetype
@@ -64,8 +65,7 @@ router.post('/upload', auth, upload.array('fotos', 4), async (req, res) => {
 // @access  Private
 router.get('/produtos', auth, async (req, res) => {
   try {
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = require('../config/db');
 
     let query = `
       SELECT fp.*, u.company_name as produtor_nome
@@ -87,8 +87,8 @@ router.get('/produtos', auth, async (req, res) => {
     }
 
     const result = req.user.clientType === 'produtor' 
-      ? await pool.query(query, [req.user.id])
-      : await pool.query(query);
+      ? await db.query(query, [req.user.id])
+      : await db.query(query);
 
     // Converter para formato compatível com localStorage
     const produtos = result.rows.map(row => ({
@@ -122,8 +122,7 @@ router.get('/produtos', auth, async (req, res) => {
 // @access  Private
 router.post('/produtos', auth, async (req, res) => {
   try {
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = require('../config/db');
 
     const {
       nome, categoria, quantidade, preco, fotos,
@@ -144,7 +143,7 @@ router.post('/produtos', auth, async (req, res) => {
       whatsapp, endereco, descricao
     ];
 
-    const result = await pool.query(query, values);
+    const result = await db.query(query, values);
     const produto = result.rows[0];
 
     // Retornar no formato compatível
@@ -178,8 +177,7 @@ router.post('/produtos', auth, async (req, res) => {
 // @access  Private
 router.put('/produtos/:id', auth, async (req, res) => {
   try {
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = require('../config/db');
 
     const {
       nome, categoria, quantidade, preco, fotos,
@@ -200,7 +198,7 @@ router.put('/produtos/:id', auth, async (req, res) => {
       req.params.id, req.user.id
     ];
 
-    const result = await pool.query(query, values);
+    const result = await db.query(query, values);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Produto não encontrado' });
@@ -237,10 +235,9 @@ router.put('/produtos/:id', auth, async (req, res) => {
 // @access  Private
 router.delete('/produtos/:id', auth, async (req, res) => {
   try {
-    const { Pool } = require('pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = require('../config/db');
 
-    const result = await pool.query(
+    const result = await db.query(
       'DELETE FROM feira_produtos WHERE id = $1 AND user_id = $2 RETURNING id',
       [req.params.id, req.user.id]
     );
