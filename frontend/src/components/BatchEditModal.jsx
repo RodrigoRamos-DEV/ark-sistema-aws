@@ -104,11 +104,11 @@ function BatchEditModal({ isOpen, onClose, onSave, transactions, items }) {
                                         >
                                             <option value={trx.description || ''}>{trx.description || '-- Selecionar --'}</option>
                                             {trx.type === 'venda' ? (
-                                                (items?.produto || []).map(item => (
+                                                items.produto?.map(item => (
                                                     <option key={item.id} value={item.name}>{item.name}</option>
                                                 ))
                                             ) : (
-                                                (items?.compra || []).map(item => (
+                                                items.compra?.map(item => (
                                                     <option key={item.id} value={item.name}>{item.name}</option>
                                                 ))
                                             )}
@@ -122,11 +122,11 @@ function BatchEditModal({ isOpen, onClose, onSave, transactions, items }) {
                                         >
                                             <option value={trx.category || ''}>{trx.category || '-- Selecionar --'}</option>
                                             {trx.type === 'venda' ? (
-                                                (items?.comprador || []).map(item => (
+                                                items.comprador?.map(item => (
                                                     <option key={item.id} value={item.name}>{item.name}</option>
                                                 ))
                                             ) : (
-                                                (items?.fornecedor || []).map(item => (
+                                                items.fornecedor?.map(item => (
                                                     <option key={item.id} value={item.name}>{item.name}</option>
                                                 ))
                                             )}

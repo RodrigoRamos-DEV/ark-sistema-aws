@@ -59,7 +59,7 @@ function RelatoriosPage() {
     }, []);
 
     const filteredTransactions = useMemo(() => {
-        return (allData.transactions || []).filter(trx => {
+        return allData.transactions.filter(trx => {
             if (viewType === 'vendas' && trx.type !== 'venda') return false;
             if (viewType === 'gastos' && trx.type !== 'gasto') return false;
             
@@ -119,7 +119,7 @@ function RelatoriosPage() {
         try {
             const employeeName = filters.employeeId === 'todos' ? null : allData.employees.find(e => e.id === filters.employeeId)?.name;
             const reportData = {
-                filteredData: filteredTransactions.map(t => ({...t, employee_name: (allData.employees || []).find(e => e.id === t.employee_id)?.name})),
+                filteredData: filteredTransactions.map(t => ({...t, employee_name: allData.employees.find(e => e.id === t.employee_id)?.name})),
                 summary,
                 filters,
                 viewType,
@@ -147,7 +147,7 @@ function RelatoriosPage() {
                 <QuickFilters onFilterChange={(quickFilters) => setFilters(prev => ({...prev, ...quickFilters}))} />
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                    <div><label>Funcionário</label><select name="employeeId" value={filters.employeeId} onChange={handleFilterChange}><option value="todos">Todos os Funcionários</option>{(allData.employees || []).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></div>
+                    <div><label>Funcionário</label><select name="employeeId" value={filters.employeeId} onChange={handleFilterChange}><option value="todos">Todos os Funcionários</option>{allData.employees.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></div>
                     <div><label>De</label><input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} /></div>
                     <div><label>Até</label><input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} /></div>
                     <div><label>Status</label><select name="status" value={filters.status} onChange={handleFilterChange}><option value="todos">Todos os Status</option><option value="Pago">Pago</option><option value="A Pagar">A Pagar</option></select></div>
@@ -166,14 +166,14 @@ function RelatoriosPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px' }}>
                         {viewType === 'vendas' && (
                             <>
-                                <div><label>Produto</label><select name="product" value={filters.product} onChange={handleFilterChange}><option value="todos">Todos os Produtos</option>{(allData.items?.produto || []).map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
-                                <div><label>Cliente</label><select name="buyer" value={filters.buyer} onChange={handleFilterChange}><option value="todos">Todos os Clientes</option>{(allData.items?.comprador || []).map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
+                                <div><label>Produto</label><select name="product" value={filters.product} onChange={handleFilterChange}><option value="todos">Todos os Produtos</option>{allData.items.produto.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
+                                <div><label>Cliente</label><select name="buyer" value={filters.buyer} onChange={handleFilterChange}><option value="todos">Todos os Clientes</option>{allData.items.comprador.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
                             </>
                         )}
                         {viewType === 'gastos' && (
                              <>
-                                <div><label>Compra</label><select name="purchase" value={filters.purchase} onChange={handleFilterChange}><option value="todos">Todas as Compras</option>{(allData.items?.compra || []).map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
-                                <div><label>Fornecedor</label><select name="supplier" value={filters.supplier} onChange={handleFilterChange}><option value="todos">Todos os Fornecedores</option>{(allData.items?.fornecedor || []).map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
+                                <div><label>Compra</label><select name="purchase" value={filters.purchase} onChange={handleFilterChange}><option value="todos">Todas as Compras</option>{allData.items.compra.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
+                                <div><label>Fornecedor</label><select name="supplier" value={filters.supplier} onChange={handleFilterChange}><option value="todos">Todos os Fornecedores</option>{allData.items.fornecedor.map(item => <option key={item.id} value={item.name}>{item.name}</option>)}</select></div>
                              </>
                         )}
                     </div>

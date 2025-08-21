@@ -14,7 +14,7 @@ function ForgotPasswordPage() {
         setIsLoading(true);
         setMessage('');
         try {
-            // ANTES: const response = await axios.post('http://3.15.32.209/api/auth/forgot-password', { email });
+            // ANTES: const response = await axios.post('http://localhost:3000/api/auth/forgot-password', { email });
             const response = await axios.post(`${API_URL}/api/auth/forgot-password`, { email }); // <-- ALTERADO
             
             toast.success(response.data.msg);

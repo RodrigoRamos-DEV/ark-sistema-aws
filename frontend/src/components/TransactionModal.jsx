@@ -188,7 +188,7 @@ function TransactionModal({ isOpen, onClose, onSave, transactionToEdit, initialT
                             <div className="desktop-only" style={{display: 'grid', gridTemplateColumns: '1.2fr 1fr 0.8fr 1.5fr 1.5fr 1fr 1fr 1fr 0.5fr', gap: '10px', marginBottom: '10px', padding: '10px', border: '1px solid var(--cor-borda)', borderRadius: '5px', backgroundColor: 'var(--cor-card)'}}>
                                 <select name="employee_id" value={row.employee_id} onChange={(e) => handleChange(index, e)} required>
                                     <option value="">Selecione</option>
-                                    {(funcionarios || []).map(f => (<option key={f.id} value={f.id}>{f.name}</option>))}
+                                    {funcionarios.map(f => (<option key={f.id} value={f.id}>{f.name}</option>))}
                                 </select>
                                 <input type="date" name="transaction_date" value={row.transaction_date} onChange={(e) => handleChange(index, e)} required />
                                 <input type="number" step="0.01" name="quantity" value={row.quantity} onChange={(e) => handleChange(index, e)} placeholder="0" required />
@@ -209,7 +209,7 @@ function TransactionModal({ isOpen, onClose, onSave, transactionToEdit, initialT
                                     <div><label style={{fontSize: '0.8em', fontWeight: 'bold'}}>Funcionário *</label>
                                         <select name="employee_id" value={row.employee_id} onChange={(e) => handleChange(index, e)} required style={{width: '100%'}}>
                                             <option value="">Selecione</option>
-                                            {(funcionarios || []).map(f => (<option key={f.id} value={f.id}>{f.name}</option>))}
+                                            {funcionarios.map(f => (<option key={f.id} value={f.id}>{f.name}</option>))}
                                         </select>
                                     </div>
                                     <div><label style={{fontSize: '0.8em', fontWeight: 'bold'}}>Data *</label>

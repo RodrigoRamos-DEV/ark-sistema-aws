@@ -21,7 +21,7 @@ function ResetPasswordPage() {
         }
         setIsLoading(true);
         try {
-            // ANTES: const response = await axios.post(`http://3.15.32.209/api/auth/reset-password/${token}`, { password });
+            // ANTES: const response = await axios.post(`http://localhost:3000/api/auth/reset-password/${token}`, { password });
             const response = await axios.post(`${API_URL}/api/auth/reset-password/${token}`, { password }); // <-- ALTERADO
             
             toast.success(response.data.msg);

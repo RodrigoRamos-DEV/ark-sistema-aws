@@ -19,7 +19,7 @@ function RegisterPage() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            // ANTES: const response = await axios.post('http://3.15.32.209/api/auth/register', formData);
+            // ANTES: const response = await axios.post('http://localhost:3000/api/auth/register', formData);
             const response = await axios.post(`${API_URL}/api/auth/register`, formData);
             
             toast.success(response.data.msg);

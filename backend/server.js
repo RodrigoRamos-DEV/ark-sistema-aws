@@ -30,7 +30,8 @@ const app = express();
 app.use(cors({
     origin: [
         'http://localhost:5173',
-        'https://main.drlr6t8qos3vx.amplifyapp.com'
+        'http://3.15.32.209:3000',
+        'https://ark-app.s3-website.amazonaws.com'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -44,8 +45,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// Torna a pasta 'uploads' publicamente acessível
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Arquivos agora são servidos via AWS S3
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 // --- Definição das Rotas da API ---

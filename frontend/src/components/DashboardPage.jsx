@@ -88,17 +88,18 @@ const AlertCard = ({ type, message, action, onAction }) => {
 function DashboardPage() {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState({
-    vendas_mes: 0,
-    receita_mes: 0,
-    clientes_ativos: 0,
-    totalClients: 0,
-    totalEmployees: 0,
-    totalItems: 0,
+    resumo: {
+      vendas_mes: 0,
+      compras_mes: 0,
+      lucro_mes: 0,
+      clientes_ativos: 0,
+      produtos_cadastrados: 0,
+      notas_fiscais_mes: 0
+    },
     vendas_diarias: [],
     produtos_mais_vendidos: [],
     clientes_top: [],
-    alertas: [],
-    recentActivity: []
+    alertas: []
   });
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState('30'); // dias
@@ -237,35 +238,35 @@ function DashboardPage() {
       <div className="dashboard-cards" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'clamp(10px, 3vw, 20px)', marginBottom: '30px'}}>
         <DashboardCard
           title="Vendas do Período"
-          value={formatCurrency(dashboardData.vendas_mes || 0)}
+          value={formatCurrency(dashboardData.resumo.vendas_mes)}
           icon={<Icons.DollarSign />}
           color="#4caf50"
           trend={12}
         />
         <DashboardCard
-          title="Receita do Período"
-          value={formatCurrency(dashboardData.receita_mes || 0)}
+          title="Compras do Período"
+          value={formatCurrency(dashboardData.resumo.compras_mes)}
           icon={<Icons.Package />}
           color="#f44336"
           trend={-5}
         />
         <DashboardCard
-          title="Total de Clientes"
-          value={dashboardData.totalClients || 0}
-          icon={<Icons.Users />}
+          title="Lucro Líquido"
+          value={formatCurrency(dashboardData.resumo.lucro_mes)}
+          icon={<Icons.Chart />}
           color="#2c5aa0"
           trend={8}
         />
         <DashboardCard
           title="Clientes Ativos"
-          value={dashboardData.clientes_ativos || 0}
+          value={dashboardData.resumo.clientes_ativos}
           icon={<Icons.Users />}
           color="#9c27b0"
           subtitle="Este período"
         />
         <DashboardCard
-          title="Total de Itens"
-          value={dashboardData.totalItems || 0}
+          title="Produtos"
+          value={dashboardData.resumo.produtos_cadastrados}
           icon={<Icons.Package />}
           color="#ff9800"
           subtitle="Cadastrados"
@@ -274,10 +275,10 @@ function DashboardPage() {
       </div>
 
       {/* Alertas */}
-      {dashboardData.alertas && dashboardData.alertas.length > 0 && (
+      {dashboardData.alertas.length > 0 && (
         <div className="card" style={{marginBottom: '30px'}}>
           <h3 style={{marginBottom: '15px'}}>🔔 Alertas e Notificações</h3>
-          {(dashboardData.alertas || []).map((alerta, index) => (
+          {dashboardData.alertas.map((alerta, index) => (
             <AlertCard
               key={index}
               type={alerta.tipo}
@@ -295,7 +296,7 @@ function DashboardPage() {
         <div className="card">
           <h3 style={{marginBottom: '20px'}}>📈 Vendas Diárias</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={dashboardData.vendas_diarias || []}>
+            <LineChart data={dashboardData.vendas_diarias}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="data" />
               <YAxis />
@@ -311,7 +312,7 @@ function DashboardPage() {
         <div className="card">
           <h3 style={{marginBottom: '20px'}}>🏆 Top Produtos</h3>
           <div style={{maxHeight: '300px', overflowY: 'auto'}}>
-            {(dashboardData.produtos_mais_vendidos || []).map((produto, index) => (
+            {dashboardData.produtos_mais_vendidos.map((produto, index) => (
               <div key={index} style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -358,7 +359,7 @@ function DashboardPage() {
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
-                data={dashboardData.clientes_top || []}
+                data={dashboardData.clientes_top}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -367,7 +368,7 @@ function DashboardPage() {
                 fill="#8884d8"
                 dataKey="valor"
               >
-                {(dashboardData.clientes_top || []).map((entry, index) => (
+                {dashboardData.clientes_top.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
