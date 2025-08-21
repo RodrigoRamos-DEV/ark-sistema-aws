@@ -75,7 +75,7 @@ function EmpresaVitrine() {
       // Tentar buscar da API primeiro
       const token = localStorage.getItem('token');
       console.log('EmpresaVitrine: Buscando produtos da API...');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://ark-pro-backend.onrender.com'}/api/feira/produtos`, {
+      const response = await fetch(`${API_URL}/api/feira/produtos`, {
         headers: { 'x-auth-token': token }
       });
       
