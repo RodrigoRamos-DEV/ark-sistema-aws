@@ -127,12 +127,12 @@ function AdminPage() {
     };
 
     const chartData = {
-        labels: ['Ativos', 'A Vencer', 'Vencidos'],
+        labels: ['Clientes', 'Usuários', 'Transações'],
         datasets: [{
             data: [
-                dashboardData?.summary?.ativos || 0,
-                dashboardData?.summary?.a_vencer || 0,
-                dashboardData?.summary?.vencidos || 0
+                dashboardData?.total_clients || 0,
+                dashboardData?.total_users || 0,
+                dashboardData?.total_transactions || 0
             ],
             backgroundColor: [ '#16a34a', '#f59e0b', '#dc2626' ],
             borderColor: 'var(--cor-card)',
@@ -258,10 +258,10 @@ function AdminPage() {
                     {loading ? <p>A carregar dashboard...</p> : dashboardData && (
                         <>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-                                <StatCard title="Total de Clientes" value={dashboardData.summary.total_clients} />
-                                <StatCard title="Ativos" value={dashboardData.summary.ativos} color="#16a34a" />
-                                <StatCard title="A Vencer" value={dashboardData.summary.a_vencer} color="#f59e0b" />
-                                <StatCard title="Vencidos" value={dashboardData.summary.vencidos} color="#dc2626" />
+                                <StatCard title="Total de Clientes" value={dashboardData.total_clients || 0} />
+                                <StatCard title="Total de Usuários" value={dashboardData.total_users || 0} color="#16a34a" />
+                                <StatCard title="Total de Transações" value={dashboardData.total_transactions || 0} color="#f59e0b" />
+                                <StatCard title="Renovações" value={dashboardData.upcomingRenewals?.length || 0} color="#dc2626" />
                             </div>
                             <div className="card grid-2-col" style={{marginTop: '20px'}}>
                                 <div>
