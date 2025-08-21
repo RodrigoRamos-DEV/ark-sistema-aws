@@ -10,9 +10,4 @@ const connectionConfig = {
 
 const pool = new Pool(connectionConfig);
 
-module.exports = {
-  // Para queries simples, fora de uma transação
-  query: (text, params) => pool.query(text, params),
-  // Para transações, pegamos um cliente específico do pool
-  getClient: () => pool.connect(),
-};
+module.exports = pool;

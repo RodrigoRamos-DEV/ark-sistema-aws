@@ -27,16 +27,8 @@ const auth = require('./src/middleware/authMiddleware');
 const app = express();
 
 // Middlewares Globais
-app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'https://ark-pro-app.onrender.com',
-        'https://ark-pro-backend.onrender.com'
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
-}));
+// Removido a configuração específica de origin para o Heroku, pois o frontend será servido do mesmo domínio
+app.use(cors()); 
 app.use(express.json());
 
 // Log de todas as requisições
@@ -66,6 +58,27 @@ app.use('/api/fix', fixRoutes);
 app.use('/api/online', onlineStatusRoutes);
 
 
+// --- NOVO: Servir os Ficheiros Estáticos do Frontend ---
+// Este bloco de código é a adição principal para o Heroku
+if (process.env.NODE_ENV === 'production') {
+  // Define o diretório onde os ficheiros de build do frontend estarão
+  const frontendBuildPath = path.join(__dirname, 'frontend/dist');
+  
+  // Serve os ficheiros estáticos (js, css, etc.) a partir desse diretório
+  app.use(express.static(frontendBuildPath));
+
+  // Para qualquer outra rota não correspondida pela API, serve o index.html do frontend
+  // Isto permite que o roteamento do React (React Router) funcione corretamente
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendBuildPath, 'index.html'));
+  });
+} else {
+    // Mantém a rota raiz para o ambiente de desenvolvimento
+    app.get('/', (req, res) => {
+        res.send('Servidor ARK Backend está no ar! (Ambiente de Desenvolvimento)');
+    });
+}
+
 
 // Middleware de tratamento de erro global
 app.use((err, req, res, next) => {
@@ -78,12 +91,8 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.get('/', (req, res) => {
-  res.send('Servidor ARK Backend está no ar!');
-});
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Servidor a rodar na porta ${PORT}`);
 });
