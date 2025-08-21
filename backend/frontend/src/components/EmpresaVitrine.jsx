@@ -29,6 +29,7 @@ function EmpresaVitrine() {
   const loadFavorites = () => {
     const userFavorites = JSON.parse(localStorage.getItem(`favorites_${user.id}`) || '[]');
     setFavorites(userFavorites);
+    console.log('Favoritos carregados:', userFavorites);
   };
   
   const getUserLocation = () => {
@@ -57,6 +58,7 @@ function EmpresaVitrine() {
     
     localStorage.setItem(`favorites_${user.id}`, JSON.stringify(updatedFavorites));
     setFavorites(updatedFavorites);
+    console.log('Favoritos atualizados:', updatedFavorites);
   };
   
   const calcularDistancia = (lat1, lng1, lat2, lng2) => {

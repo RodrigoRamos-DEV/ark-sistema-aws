@@ -196,20 +196,12 @@ function EmpresaMapa() {
             ${userLocation ? `<p><strong>Distância:</strong> ${calcularDistancia(userLocation.lat, userLocation.lng, parseFloat(produto.latitude), parseFloat(produto.longitude)).toFixed(1)} km</p>` : ''}
             <div style="display: flex; gap: 5px; margin-top: 10px;">
               <button onclick="window.showProductDetails && window.showProductDetails(${produto.id})" 
-                      style="background: #2196f3; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; flex: 1;">
+                      style="background: #2196f3; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; width: 100%;">
                 🔍 Ver Detalhes
-              </button>
-              <button onclick="window.open('https://wa.me/55${produto.whatsapp.replace(/\D/g, '')}?text=Ol%C3%A1!%20Sou%20da%20empresa%20e%20vi%20seu%20produto%20${produto.nome}%20no%20sistema%20ARK.%20Ainda%20est%C3%A1%20dispon%C3%ADvel?', '_blank')" 
-                      style="background: #25d366; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; flex: 1;">
-                💬 WhatsApp
               </button>
             </div>
           </div>
         `);
-        
-      marker.on('click', () => {
-        setSelectedProduto(produto);
-      });
       markers.addLayer(marker);
     });
     
