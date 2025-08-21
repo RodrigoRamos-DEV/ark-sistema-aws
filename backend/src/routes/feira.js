@@ -68,9 +68,9 @@ router.get('/produtos/publico', async (req, res) => {
     const db = require('../config/db');
 
     const query = `
-      SELECT fp.*, c.company_name as produtor_nome
+      SELECT fp.*, u.company_name as produtor_nome
       FROM feira_produtos fp
-      LEFT JOIN clients c ON fp.client_id = c.id
+      LEFT JOIN users u ON fp.user_id = u.id
       WHERE fp.disponivel = true
       ORDER BY fp.created_at DESC
     `;
@@ -109,29 +109,28 @@ router.get('/produtos', auth, async (req, res) => {
   try {
     const db = require('../config/db');
 
-    let query, result;
+    let query = `
+      SELECT fp.*, u.company_name as produtor_nome
+      FROM feira_produtos fp
+      LEFT JOIN users u ON fp.user_id = u.id
+      WHERE fp.disponivel = true
+      ORDER BY fp.created_at DESC
+    `;
 
     // Se for produtor, mostrar apenas seus produtos
     if (req.user.clientType === 'produtor') {
       query = `
-        SELECT fp.*, c.company_name as produtor_nome
+        SELECT fp.*, u.company_name as produtor_nome
         FROM feira_produtos fp
-        LEFT JOIN clients c ON fp.client_id = c.id
+        LEFT JOIN users u ON fp.user_id = u.id
         WHERE fp.user_id = $1
         ORDER BY fp.created_at DESC
       `;
-      result = await db.query(query, [req.user.id]);
-    } else {
-      // Para empresas e outros tipos, mostrar todos os produtos disponíveis
-      query = `
-        SELECT fp.*, c.company_name as produtor_nome
-        FROM feira_produtos fp
-        LEFT JOIN clients c ON fp.client_id = c.id
-        WHERE fp.disponivel = true
-        ORDER BY fp.created_at DESC
-      `;
-      result = await db.query(query);
     }
+
+    const result = req.user.clientType === 'produtor' 
+      ? await db.query(query, [req.user.id])
+      : await db.query(query);
 
     // Converter para formato compatível com localStorage
     const produtos = result.rows.map(row => ({
@@ -174,15 +173,15 @@ router.post('/produtos', auth, async (req, res) => {
 
     const query = `
       INSERT INTO feira_produtos 
-      (nome, categoria, quantidade, preco, fotos, latitude, longitude, disponivel, user_id, client_id, produtor, whatsapp, endereco, descricao)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      (nome, categoria, quantidade, preco, fotos, latitude, longitude, disponivel, user_id, produtor, whatsapp, endereco, descricao)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
     `;
 
     const values = [
       nome, categoria, quantidade, preco, fotos,
       latitude, longitude, disponivel !== false,
-      req.user.id, req.user.clientId, req.user.companyName || req.user.name,
+      req.user.id, req.user.companyName || req.user.name,
       whatsapp, endereco, descricao
     ];
 
