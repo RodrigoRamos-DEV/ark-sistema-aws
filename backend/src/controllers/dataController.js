@@ -1310,7 +1310,8 @@ exports.getDashboardData = async (req, res) => {
                 category as nome,
                 SUM(total_price) as valor
             FROM transactions 
-            WHERE client_id = $1 AND type = 'venda' AND transaction_date >= $2 AND category IS NOT NULL
+            WHERE client_id = $1 AND type = 'venda' AND transaction_date >= $2 
+            AND category IS NOT NULL AND category != '' AND TRIM(category) != ''
             GROUP BY category
             ORDER BY SUM(total_price) DESC
             LIMIT 5
