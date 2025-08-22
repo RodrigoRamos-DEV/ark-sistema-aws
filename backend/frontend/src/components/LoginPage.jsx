@@ -27,8 +27,11 @@ function LoginPage() {
         e.preventDefault();
         setIsLoading(true);
         try {
+            console.log('🚀 Tentando login com URL:', `${API_URL}/api/auth/login`);
+            console.log('🚀 Dados:', { email, password: '***' });
             
-                        const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
+            const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
+            console.log('✅ Login bem-sucedido:', response.data);
 
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -38,6 +41,9 @@ function LoginPage() {
                 navigate('/client-router');
             }
         } catch (err) {
+            console.error('❌ Erro no login:', err);
+            console.error('❌ Resposta do servidor:', err.response?.data);
+            console.error('❌ Status:', err.response?.status);
             toast.error(err.response?.data?.msg || 'Erro ao conectar ao servidor.');
             setIsLoading(false);
         }
