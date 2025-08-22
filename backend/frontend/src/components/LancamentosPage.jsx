@@ -317,7 +317,7 @@ function LancamentosPage() {
                             return newList;
                         });
                         toast.success('Lançamento excluído com sucesso!');
-                        // Forçar recarregamento da lista
+                        // Forçar recarregamento da lista para garantir atualização
                         fetchTransactions();
                     }
                     closeConfirmModal();
