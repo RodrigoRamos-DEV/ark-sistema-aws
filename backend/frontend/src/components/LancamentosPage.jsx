@@ -307,9 +307,18 @@ function LancamentosPage() {
                         setTransactions(prev => prev.filter(trx => trx.pedido_id !== transactionId));
                         toast.success('Pedido excluído com sucesso!');
                     } else {
-                        await axios.delete(`${DATA_API_URL}/transactions/${transactionId}`, { headers: { 'x-auth-token': token } });
-                        setTransactions(prev => prev.filter(trx => trx.id !== transactionId));
+                        console.log('Tentando deletar transação:', transactionId);
+                        const response = await axios.delete(`${DATA_API_URL}/transactions/${transactionId}`, { headers: { 'x-auth-token': token } });
+                        console.log('Resposta da deleção:', response.data);
+                        console.log('Atualizando lista de transações...');
+                        setTransactions(prev => {
+                            const newList = prev.filter(trx => trx.id !== transactionId);
+                            console.log('Lista antes:', prev.length, 'Lista depois:', newList.length);
+                            return newList;
+                        });
                         toast.success('Lançamento excluído com sucesso!');
+                        // Forçar recarregamento da lista
+                        fetchTransactions();
                     }
                     closeConfirmModal();
                 } catch (err) {
