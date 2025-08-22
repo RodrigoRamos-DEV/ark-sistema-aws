@@ -318,7 +318,8 @@ function LancamentosPage() {
                         });
                         toast.success('Lançamento excluído com sucesso!');
                         // Forçar recarregamento da lista para garantir atualização
-                        fetchTransactions();
+                        console.log('Chamando fetchTransactions após deleção...');
+                        await fetchTransactions();
                     }
                     closeConfirmModal();
                 } catch (err) {
