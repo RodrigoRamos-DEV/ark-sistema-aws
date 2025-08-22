@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug ARK</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+</head>
+<body>
+    <h1>Debug ARK Sistema</h1>
+    <div id="debug-info"></div>
+    
+    <script>
+        console.log('🔥 DEBUG CARREGADO');
+        
+        // Testa se consegue fazer requisição para a API
+        fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: 'teste@teste.com',
+                password: '123'
+            })
+        })
+        .then(response => {
+            console.log('✅ API respondeu:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('📄 Resposta da API:', data);
+            document.getElementById('debug-info').innerHTML = 
+                '<p>✅ API funcionando! Status: ' + data + '</p>';
+        })
+        .catch(error => {
+            console.error('❌ Erro na API:', error);
+            document.getElementById('debug-info').innerHTML = 
+                '<p>❌ Erro na API: ' + error.message + '</p>';
+        });
+        
+        // Mostra informações do ambiente
+        document.getElementById('debug-info').innerHTML += 
+            '<p>🌐 URL atual: ' + window.location.href + '</p>' +
+            '<p>🔧 User Agent: ' + navigator.userAgent + '</p>';
+    </script>
+</body>
+</html>
