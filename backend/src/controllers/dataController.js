@@ -1304,31 +1304,7 @@ exports.getDashboardData = async (req, res) => {
             LIMIT 5
         `, [clientId, dataInicio.toISOString().split('T')[0]]);
         
-        // Top clientes - com debug
-        console.log('🔍 Debug Top Clientes - clientId:', clientId, 'dataInicio:', dataInicio.toISOString().split('T')[0]);
-        
-        // Primeiro, vamos ver todas as vendas do período
-        const debugVendas = await db.query(`
-            SELECT category, total_price, transaction_date
-            FROM transactions 
-            WHERE client_id = $1 AND type = 'venda' AND transaction_date >= $2
-            ORDER BY transaction_date DESC
-            LIMIT 10
-        `, [clientId, dataInicio.toISOString().split('T')[0]]);
-        console.log('📊 Vendas encontradas:', debugVendas.rows);
-        
-        const clientesTopResult = await db.query(`
-            SELECT 
-                category as nome,
-                SUM(total_price) as valor
-            FROM transactions 
-            WHERE client_id = $1 AND type = 'venda' AND transaction_date >= $2 
-            AND category IS NOT NULL AND category != '' AND TRIM(category) != ''
-            GROUP BY category
-            ORDER BY SUM(total_price) DESC
-            LIMIT 5
-        `, [clientId, dataInicio.toISOString().split('T')[0]]);
-        console.log('🏆 Top clientes resultado:', clientesTopResult.rows);
+        // Top clientes removido
         
         // Vendas por categoria (simulado)
         const vendasPorCategoriaResult = await db.query(`
@@ -1386,7 +1362,7 @@ exports.getDashboardData = async (req, res) => {
                 data: new Date(row.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
             })),
             produtos_mais_vendidos: produtosMaisVendidosResult.rows,
-            clientes_top: clientesTopResult.rows,
+            clientes_top: [], // Removido
             vendas_por_categoria: vendasPorCategoriaResult.rows,
             alertas
         };

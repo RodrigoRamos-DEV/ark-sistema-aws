@@ -337,12 +337,12 @@ function DashboardPage() {
         </div>
       </div>
 
-      {/* Gráficos Inferiores */}
-      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
+      {/* Gráfico Inferior */}
+      <div style={{display: 'flex', justifyContent: 'center'}}>
         {/* Gráfico de Barras - Vendas por Categoria */}
-        <div className="card">
+        <div className="card" style={{width: '100%', maxWidth: '800px'}}>
           <h3 style={{marginBottom: '20px'}}>📊 Vendas por Categoria</h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={dashboardData.vendas_por_categoria || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="categoria" />
@@ -350,30 +350,6 @@ function DashboardPage() {
               <Tooltip formatter={(value) => formatCurrency(value)} />
               <Bar dataKey="valor" fill="#2c5aa0" />
             </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Gráfico Pizza - Clientes Top */}
-        <div className="card">
-          <h3 style={{marginBottom: '20px'}}>🥧 Top Clientes</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={dashboardData.clientes_top}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="valor"
-              >
-                {dashboardData.clientes_top.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatCurrency(value)} />
-            </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
