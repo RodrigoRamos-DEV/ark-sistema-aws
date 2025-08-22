@@ -30,6 +30,8 @@ const app = express();
 const corsOptions = {
   origin: [
     'https://ark-sistema-d9711c405f21.herokuapp.com',
+    'https://sistema.arksistemas.com.br',
+    'https://arksistemas.com.br',
     'http://localhost:3000',
     'http://localhost:5173'
   ],
