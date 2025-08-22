@@ -438,12 +438,18 @@ exports.updateTransaction = async (req, res) => {
 
 exports.deleteTransaction = async (req, res) => {
     const { id } = req.params;
+    console.log(`Tentando deletar transação ID: ${id} para cliente: ${req.user.clientId}`);
     try {
         const result = await db.query('DELETE FROM transactions WHERE id = $1 AND client_id = $2', [id, req.user.clientId]);
-        if (result.rowCount === 0) { return res.status(404).json({ error: 'Transação não encontrada ou não pertence a este cliente.' }); }
+        console.log(`Resultado da deleção: ${result.rowCount} linha(s) afetada(s)`);
+        if (result.rowCount === 0) { 
+            console.log('Transação não encontrada');
+            return res.status(404).json({ error: 'Transação não encontrada ou não pertence a este cliente.' }); 
+        }
+        console.log('Transação deletada com sucesso');
         res.json({ msg: 'Transação deletada com sucesso.' });
     } catch (err) {
-        console.error(err.message);
+        console.error('Erro ao deletar transação:', err.message);
         res.status(500).json({ error: 'Erro no servidor ao deletar transação.' });
     }
 };
