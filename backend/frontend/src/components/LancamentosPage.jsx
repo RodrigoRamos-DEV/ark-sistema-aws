@@ -286,9 +286,8 @@ function LancamentosPage() {
     };
 
     const handleDeleteTransaction = (transactionId) => {
-        // Verificar se é um pedido (transactionId é um pedido_id)
-        const isPedido = transactions.some(trx => trx.pedido_id === transactionId) || 
-                        (typeof transactionId === 'string' && transactionId.length === 36 && transactionId.includes('-'));
+        // Verificar se é um pedido - deve verificar se existem transações com esse pedido_id
+        const isPedido = transactions.some(trx => trx.pedido_id === transactionId);
         
         setConfirmState({
             isOpen: true,
@@ -307,23 +306,15 @@ function LancamentosPage() {
                         setTransactions(prev => prev.filter(trx => trx.pedido_id !== transactionId));
                         toast.success('Pedido excluído com sucesso!');
                     } else {
-                        console.log('Tentando deletar transação:', transactionId);
-                        const response = await axios.delete(`${DATA_API_URL}/transactions/${transactionId}`, { headers: { 'x-auth-token': token } });
-                        console.log('Resposta da deleção:', response.data);
-                        console.log('Atualizando lista de transações...');
-                        setTransactions(prev => {
-                            const newList = prev.filter(trx => trx.id !== transactionId);
-                            console.log('Lista antes:', prev.length, 'Lista depois:', newList.length);
-                            return newList;
-                        });
+                        // Excluir transação individual
+                        await axios.delete(`${DATA_API_URL}/transactions/${transactionId}`, { headers: { 'x-auth-token': token } });
+                        setTransactions(prev => prev.filter(trx => trx.id !== transactionId));
                         toast.success('Lançamento excluído com sucesso!');
-                        // Forçar recarregamento da lista para garantir atualização
-                        console.log('Chamando fetchTransactions após deleção...');
-                        await fetchTransactions();
                     }
                     closeConfirmModal();
                 } catch (err) {
-                    setError(err.response?.data?.error || 'Erro ao excluir');
+                    console.error('Erro ao excluir:', err);
+                    toast.error(err.response?.data?.error || 'Erro ao excluir');
                     closeConfirmModal();
                 }
             }
