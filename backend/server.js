@@ -27,8 +27,10 @@ try {
 }
 
 // Importa middlewares
-const { checkTrialStatus } = require('./src/middleware/trialMiddleware');
 const auth = require('./src/middleware/authMiddleware');
+
+// Middleware trial temporariamente desabilitado
+const checkTrialStatus = (req, res, next) => next();
 
 
 const app = express();
