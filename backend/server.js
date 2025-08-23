@@ -3,34 +3,48 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-// Importa os ficheiros de rotas essenciais
+// Importa os ficheiros de rotas
 const authRoutes = require('./src/routes/authRoutes');
 const dataRoutes = require('./src/routes/dataRoutes');
 const adminNotificationRoutes = require('./src/routes/admin');
 const onlineStatusRoutes = require('./src/routes/onlineStatusRoutes');
 
-// Rotas opcionais com try-catch
+// Rotas com try-catch para evitar crash
 let adminRoutes, partnerRoutes, licenseRoutes, backupRoutes, auditRoutes, importExportRoutes, feiraRoutes, migrateRoutes, syncRoutes, fixRoutes;
 try {
     adminRoutes = require('./src/routes/adminRoutes');
+} catch (err) { console.warn('adminRoutes não carregada:', err.message); }
+try {
     partnerRoutes = require('./src/routes/partnerRoutes');
+} catch (err) { console.warn('partnerRoutes não carregada:', err.message); }
+try {
     licenseRoutes = require('./src/routes/licenseRoutes');
+} catch (err) { console.warn('licenseRoutes não carregada:', err.message); }
+try {
     backupRoutes = require('./src/routes/backupRoutes');
+} catch (err) { console.warn('backupRoutes não carregada:', err.message); }
+try {
     auditRoutes = require('./src/routes/auditRoutes');
+} catch (err) { console.warn('auditRoutes não carregada:', err.message); }
+try {
     importExportRoutes = require('./src/routes/importExportRoutes');
+} catch (err) { console.warn('importExportRoutes não carregada:', err.message); }
+try {
     feiraRoutes = require('./src/routes/feira');
+} catch (err) { console.warn('feiraRoutes não carregada:', err.message); }
+try {
     migrateRoutes = require('./src/routes/migrate');
+} catch (err) { console.warn('migrateRoutes não carregada:', err.message); }
+try {
     syncRoutes = require('./src/routes/syncRoutes');
+} catch (err) { console.warn('syncRoutes não carregada:', err.message); }
+try {
     fixRoutes = require('./src/routes/fixRoutes');
-} catch (err) {
-    console.warn('Algumas rotas opcionais não puderam ser carregadas:', err.message);
-}
+} catch (err) { console.warn('fixRoutes não carregada:', err.message); }
 
 // Importa middlewares
 const auth = require('./src/middleware/authMiddleware');
-
-// Middleware trial temporariamente desabilitado
-const checkTrialStatus = (req, res, next) => next();
+const { checkTrialStatus } = require('./src/middleware/trialMiddleware');
 
 
 const app = express();
