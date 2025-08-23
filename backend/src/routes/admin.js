@@ -68,9 +68,8 @@ router.delete('/notifications/:id', auth, async (req, res) => {
 
     const notificationId = req.params.id;
     
-    // Validar se o ID é um UUID válido
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(notificationId)) {
+    // Validar se o ID é um número válido
+    if (!notificationId || isNaN(parseInt(notificationId))) {
       return res.status(400).json({ message: 'ID de notificação inválido' });
     }
 

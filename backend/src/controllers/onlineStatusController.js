@@ -4,10 +4,10 @@ const db = require('../config/db');
 exports.updateOnlineStatus = async (req, res) => {
     try {
         console.log('Heartbeat request - user:', req.user);
-        const clientId = req.user?.clientId;
+        const clientId = req.user?.clientId || req.user?.id;
         
         if (!clientId) {
-            console.log('Heartbeat error: Cliente não identificado');
+            console.log('Heartbeat error: Cliente não identificado', req.user);
             return res.status(400).json({ msg: 'Cliente não identificado.' });
         }
 
