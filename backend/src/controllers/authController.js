@@ -98,21 +98,18 @@ exports.registerClient = async (req, res) => {
         return res.status(400).json({ msg: "Por favor, preencha todos os campos." });
     }
     
-    const client = await db.getClient();
     try {
-        await client.query('BEGIN');
-        
         // Verificar se email já existe
-        const existingUser = await client.query('SELECT 1 FROM users WHERE email = $1', [email]);
+        const existingUser = await db.query('SELECT 1 FROM users WHERE email = $1', [email]);
         if (existingUser.rowCount > 0) {
-            throw new Error("Este email já está em uso.");
+            return res.status(400).json({ msg: "Este email já está em uso." });
         }
         
         // Criar cliente com trial de 3 dias
         const trialExpiry = new Date();
         trialExpiry.setDate(trialExpiry.getDate() + 3);
         
-        const clientResult = await client.query(
+        const clientResult = await db.query(
             'INSERT INTO clients (company_name, client_type, license_expires_at, license_status) VALUES ($1, $2, $3, $4) RETURNING id',
             [companyName, 'produtor', trialExpiry, 'Trial']
         );
@@ -123,27 +120,22 @@ exports.registerClient = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
         
-        await client.query(
+        await db.query(
             'INSERT INTO users (client_id, email, password_hash, role) VALUES ($1, $2, $3, $4)',
             [clientId, email, passwordHash, 'funcionario']
         );
         
-        await client.query('COMMIT');
-        
         res.status(201).json({ 
             msg: "Conta criada com sucesso! Você tem 3 dias de trial gratuito.",
             trialDays: 3,
-            whatsapp: "+55 21 97304-4415" // SUBSTITUA PELO SEU NÚMERO REAL
+            whatsapp: "+55 21 97304-4415"
         });
     } catch (err) {
-        await client.query('ROLLBACK');
-        console.error(err.message);
+        console.error('Erro no registro:', err.message);
         if (err.code === '23505') { 
             return res.status(400).json({ msg: 'Este email já está em uso.' }); 
         }
-        res.status(400).json({ msg: err.message || 'Erro no servidor.' });
-    } finally {
-        client.release();
+        res.status(500).json({ msg: 'Erro no servidor ao criar conta.' });
     }
 };
 
