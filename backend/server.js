@@ -3,21 +3,28 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-// Importa os ficheiros de rotas
+// Importa os ficheiros de rotas essenciais
 const authRoutes = require('./src/routes/authRoutes');
-const adminRoutes = require('./src/routes/adminRoutes');
 const dataRoutes = require('./src/routes/dataRoutes');
-const partnerRoutes = require('./src/routes/partnerRoutes');
-const licenseRoutes = require('./src/routes/licenseRoutes');
-const backupRoutes = require('./src/routes/backupRoutes');
-const auditRoutes = require('./src/routes/auditRoutes');
-const importExportRoutes = require('./src/routes/importExportRoutes');
-const feiraRoutes = require('./src/routes/feira');
 const adminNotificationRoutes = require('./src/routes/admin');
-const migrateRoutes = require('./src/routes/migrate');
-const syncRoutes = require('./src/routes/syncRoutes');
-const fixRoutes = require('./src/routes/fixRoutes');
 const onlineStatusRoutes = require('./src/routes/onlineStatusRoutes');
+
+// Rotas opcionais com try-catch
+let adminRoutes, partnerRoutes, licenseRoutes, backupRoutes, auditRoutes, importExportRoutes, feiraRoutes, migrateRoutes, syncRoutes, fixRoutes;
+try {
+    adminRoutes = require('./src/routes/adminRoutes');
+    partnerRoutes = require('./src/routes/partnerRoutes');
+    licenseRoutes = require('./src/routes/licenseRoutes');
+    backupRoutes = require('./src/routes/backupRoutes');
+    auditRoutes = require('./src/routes/auditRoutes');
+    importExportRoutes = require('./src/routes/importExportRoutes');
+    feiraRoutes = require('./src/routes/feira');
+    migrateRoutes = require('./src/routes/migrate');
+    syncRoutes = require('./src/routes/syncRoutes');
+    fixRoutes = require('./src/routes/fixRoutes');
+} catch (err) {
+    console.warn('Algumas rotas opcionais não puderam ser carregadas:', err.message);
+}
 
 // Importa middlewares
 const { checkTrialStatus } = require('./src/middleware/trialMiddleware');
@@ -54,19 +61,21 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Definição das Rotas da API ---
 app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
 app.use('/api/data', auth, checkTrialStatus, dataRoutes);
-app.use('/api/partners', auth, checkTrialStatus, partnerRoutes);
-app.use('/api/license', auth, checkTrialStatus, licenseRoutes);
-app.use('/api/backup', auth, checkTrialStatus, backupRoutes);
-app.use('/api/audit', auth, checkTrialStatus, auditRoutes);
-app.use('/api', auth, checkTrialStatus, importExportRoutes);
-app.use('/api/feira', auth, checkTrialStatus, feiraRoutes);
 app.use('/api/admin', adminNotificationRoutes);
-app.use('/api/migrate', migrateRoutes);
-app.use('/api/sync', syncRoutes);
-app.use('/api/fix', fixRoutes);
 app.use('/api/online', onlineStatusRoutes);
+
+// Rotas opcionais
+if (adminRoutes) app.use('/api/admin', adminRoutes);
+if (partnerRoutes) app.use('/api/partners', auth, checkTrialStatus, partnerRoutes);
+if (licenseRoutes) app.use('/api/license', auth, checkTrialStatus, licenseRoutes);
+if (backupRoutes) app.use('/api/backup', auth, checkTrialStatus, backupRoutes);
+if (auditRoutes) app.use('/api/audit', auth, checkTrialStatus, auditRoutes);
+if (importExportRoutes) app.use('/api', auth, checkTrialStatus, importExportRoutes);
+if (feiraRoutes) app.use('/api/feira', auth, checkTrialStatus, feiraRoutes);
+if (migrateRoutes) app.use('/api/migrate', migrateRoutes);
+if (syncRoutes) app.use('/api/sync', syncRoutes);
+if (fixRoutes) app.use('/api/fix', fixRoutes);
 
 
 // --- NOVO: Servir os Ficheiros Estáticos do Frontend ---
