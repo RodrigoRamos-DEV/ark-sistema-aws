@@ -24,9 +24,20 @@ app.use(express.json());
 // Rotas essenciais
 try {
     const authRoutes = require('./src/routes/authRoutes');
+    const dataRoutes = require('./src/routes/dataRoutes');
+    const adminNotificationRoutes = require('./src/routes/admin');
+    const onlineStatusRoutes = require('./src/routes/onlineStatusRoutes');
+    const auth = require('./src/middleware/authMiddleware');
+    
+    // Middleware trial simplificado
+    const checkTrialStatus = (req, res, next) => next();
+    
     app.use('/api/auth', authRoutes);
+    app.use('/api/data', auth, checkTrialStatus, dataRoutes);
+    app.use('/api/admin', adminNotificationRoutes);
+    app.use('/api/online', onlineStatusRoutes);
 } catch (err) {
-    console.warn('Rota auth não carregada:', err.message);
+    console.warn('Erro ao carregar rotas:', err.message);
 }
 
 // Rota de teste
