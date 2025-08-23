@@ -5,9 +5,29 @@ const path = require('path');
 
 const app = express();
 
-// CORS básico
-app.use(cors());
+// CORS configurado
+const corsOptions = {
+  origin: [
+    'https://ark-sistema-d9711c405f21.herokuapp.com',
+    'https://sistema.arksistemas.com.br',
+    'https://arksistemas.com.br',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-auth-token']
+};
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Rotas essenciais
+try {
+    const authRoutes = require('./src/routes/authRoutes');
+    app.use('/api/auth', authRoutes);
+} catch (err) {
+    console.warn('Rota auth não carregada:', err.message);
+}
 
 // Rota de teste
 app.get('/api/test', (req, res) => {
