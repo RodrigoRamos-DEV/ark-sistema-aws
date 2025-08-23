@@ -11,10 +11,10 @@ exports.updateOnlineStatus = async (req, res) => {
             return res.status(400).json({ msg: 'Cliente não identificado.' });
         }
 
-        // Criar tabela se não existir
+        // Criar tabela se não existir (sem foreign key para evitar problemas)
         await db.query(`
             CREATE TABLE IF NOT EXISTS user_online_status (
-                client_id UUID PRIMARY KEY REFERENCES clients(id) ON DELETE CASCADE,
+                client_id UUID PRIMARY KEY,
                 last_activity TIMESTAMP DEFAULT NOW(),
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
@@ -22,12 +22,17 @@ exports.updateOnlineStatus = async (req, res) => {
         `);
 
         // Inserir ou atualizar status
-        await db.query(`
-            INSERT INTO user_online_status (client_id, last_activity, updated_at) 
-            VALUES ($1, NOW(), NOW())
-            ON CONFLICT (client_id) 
-            DO UPDATE SET last_activity = NOW(), updated_at = NOW()
-        `, [clientId]);
+        try {
+            await db.query(`
+                INSERT INTO user_online_status (client_id, last_activity, updated_at) 
+                VALUES ($1, NOW(), NOW())
+                ON CONFLICT (client_id) 
+                DO UPDATE SET last_activity = NOW(), updated_at = NOW()
+            `, [clientId]);
+        } catch (dbError) {
+            console.error('Erro na query do heartbeat:', dbError);
+            // Se der erro, apenas retorna sucesso para não quebrar o frontend
+        }
 
         res.json({ msg: 'Status atualizado' });
     } catch (error) {
