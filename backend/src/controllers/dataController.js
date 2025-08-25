@@ -458,18 +458,12 @@ exports.batchDeleteTransactions = async (req, res) => {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids) || ids.length === 0) { return res.status(400).json({ error: 'Uma lista de IDs é necessária.' }); }
     
-    const client = await db.getClient();
     try {
-        await client.query('BEGIN');
-        await client.query( 'DELETE FROM transactions WHERE id = ANY($1) AND client_id = $2', [ids, req.user.clientId] );
-        await client.query('COMMIT');
+        await db.query('DELETE FROM transactions WHERE id = ANY($1) AND client_id = $2', [ids, req.user.clientId]);
         res.json({ msg: 'Lançamentos selecionados foram deletados com sucesso.' });
     } catch (err) {
-        await client.query('ROLLBACK');
         console.error(err.message);
         res.status(500).json({ error: 'Erro no servidor ao deletar lançamentos.' });
-    } finally {
-        client.release();
     }
 };
 
