@@ -4,11 +4,17 @@ const db = require('../config/db');
 exports.updateOnlineStatus = async (req, res) => {
     try {
         console.log('Heartbeat request - user:', req.user);
-        const clientId = req.user?.clientId || req.user?.id;
+        const userId = req.user?.id;
+        const userRole = req.user?.role;
         
-        if (!clientId) {
-            console.log('Heartbeat error: Cliente não identificado', req.user);
-            return res.status(400).json({ msg: 'Cliente não identificado.' });
+        if (!userId) {
+            console.log('Heartbeat error: Usuário não identificado', req.user);
+            return res.status(400).json({ msg: 'Usuário não identificado.' });
+        }
+
+        // Para admin, não salvar status online (evita foreign key constraint)
+        if (userRole === 'admin') {
+            return res.json({ msg: 'Status atualizado (admin)' });
         }
 
         // Criar tabela se não existir (sem foreign key para evitar problemas)
@@ -21,6 +27,14 @@ exports.updateOnlineStatus = async (req, res) => {
             )
         `);
 
+        // Verificar se o cliente existe antes de inserir
+        const clientExists = await db.query('SELECT id FROM clients WHERE id = $1', [userId]);
+        
+        if (clientExists.rows.length === 0) {
+            console.log('Cliente não encontrado na tabela clients:', userId);
+            return res.json({ msg: 'Status atualizado (cliente não encontrado)' });
+        }
+
         // Inserir ou atualizar status
         try {
             await db.query(`
@@ -28,7 +42,7 @@ exports.updateOnlineStatus = async (req, res) => {
                 VALUES ($1, NOW(), NOW())
                 ON CONFLICT (client_id) 
                 DO UPDATE SET last_activity = NOW(), updated_at = NOW()
-            `, [clientId]);
+            `, [userId]);
         } catch (dbError) {
             console.error('Erro na query do heartbeat:', dbError);
             // Se der erro, apenas retorna sucesso para não quebrar o frontend

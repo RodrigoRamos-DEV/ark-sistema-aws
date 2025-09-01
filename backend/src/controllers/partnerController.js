@@ -207,12 +207,9 @@ exports.getComissoes = async (req, res) => {
 exports.marcarComissaoPaga = async (req, res) => {
     const { vendedor_id, mes_referencia } = req.body;
     
-    const client = await db.getClient();
     try {
-        await client.query('BEGIN');
-        
         // Criar tabela se não existir
-        await client.query(`
+        await db.query(`
             CREATE TABLE IF NOT EXISTS payment_vendors (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 payment_id UUID NOT NULL,
@@ -225,7 +222,7 @@ exports.marcarComissaoPaga = async (req, res) => {
         `);
         
         // Buscar comissões pendentes do vendedor no mês
-        const comissoes = await client.query(`
+        const comissoes = await db.query(`
             SELECT pv.*, v.name as vendedor_nome
             FROM payment_vendors pv
             JOIN payments p ON pv.payment_id = p.id
@@ -236,7 +233,6 @@ exports.marcarComissaoPaga = async (req, res) => {
         `, [vendedor_id, mes_referencia]);
         
         if (comissoes.rows.length === 0) {
-            await client.query('ROLLBACK');
             return res.status(400).json({ error: 'Nenhuma comissão pendente encontrada.' });
         }
         
@@ -247,7 +243,7 @@ exports.marcarComissaoPaga = async (req, res) => {
         console.log(`Criando UMA retirada para ${vendedorNome}: ${totalComissao} (${comissoes.rows.length} comissões)`);
         
         // Verificar se já existe retirada para este vendedor hoje
-        const existingWithdrawal = await client.query(`
+        const existingWithdrawal = await db.query(`
             SELECT id FROM withdrawals 
             WHERE partner_id = $1 
             AND withdrawal_date = CURRENT_DATE 
@@ -255,19 +251,18 @@ exports.marcarComissaoPaga = async (req, res) => {
         `, [vendedor_id, totalComissao]);
         
         if (existingWithdrawal.rows.length > 0) {
-            await client.query('ROLLBACK');
             return res.status(400).json({ error: 'Retirada já existe para este vendedor hoje.' });
         }
         
         // Criar UMA Única retirada com o valor total
-        const withdrawal = await client.query(`
+        const withdrawal = await db.query(`
             INSERT INTO withdrawals (partner_id, amount, withdrawal_date)
             VALUES ($1, $2, CURRENT_DATE)
             RETURNING *
         `, [vendedor_id, totalComissao]);
         
         // Marcar TODAS as comissões como pagas
-        const updateResult = await client.query(`
+        const updateResult = await db.query(`
             UPDATE payment_vendors 
             SET status = 'pago'
             WHERE vendedor_id = $1 
@@ -280,8 +275,6 @@ exports.marcarComissaoPaga = async (req, res) => {
         
         console.log(`Marcadas ${updateResult.rowCount} comissões como pagas`);
         
-        await client.query('COMMIT');
-        
         res.json({ 
             success: true, 
             withdrawal: withdrawal.rows[0],
@@ -289,11 +282,8 @@ exports.marcarComissaoPaga = async (req, res) => {
             comissoes_pagas: comissoes.rows.length
         });
     } catch (err) {
-        await client.query('ROLLBACK');
         console.error('Erro ao marcar pagamento:', err.message);
         res.status(500).json({ error: 'Erro ao marcar pagamento: ' + err.message });
-    } finally {
-        client.release();
     }
 };
 
