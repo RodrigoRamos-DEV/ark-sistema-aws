@@ -844,7 +844,7 @@ function ControleFinanceiroPage() {
                                     </div>
                                     <div>
                                         <strong style={{color: '#333'}}>Período de Referência:</strong>
-                                        <div style={{fontSize: '16px', color: '#007bff', fontWeight: 'bold'}}>{new Date(dadosRecibo.mes_referencia + '-01').toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'}).replace(/^\w/, c => c.toUpperCase())}</div>
+                                        <div style={{fontSize: '16px', color: '#007bff', fontWeight: 'bold'}}>{new Date(dadosRecibo.mes_referencia + '-01').toLocaleDateString('pt-BR', {month: 'long', year: 'numeric', timeZone: 'UTC'}).replace(/^\w/, c => c.toUpperCase())}</div>
                                     </div>
                                 </div>
                             </div>

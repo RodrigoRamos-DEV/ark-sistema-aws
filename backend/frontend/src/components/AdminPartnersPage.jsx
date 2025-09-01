@@ -340,7 +340,7 @@ function AdminPartnersPage() {
 
             <div className="card">
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-                    <h3>Controle Financeiro - {new Date(mesReferencia + '-01').toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'}).replace(/^\w/, c => c.toUpperCase())}</h3>
+                    <h3>Controle Financeiro - {new Date(mesReferencia + '-01').toLocaleDateString('pt-BR', {month: 'long', year: 'numeric', timeZone: 'UTC'}).replace(/^\w/, c => c.toUpperCase())}</h3>
                     <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
                         <input type="month" value={mesReferencia} onChange={(e) => setMesReferencia(e.target.value)} />
                         <button onClick={loadComissoes} className="btn" style={{padding: '5px 10px', fontSize: '12px'}}>Atualizar</button>
