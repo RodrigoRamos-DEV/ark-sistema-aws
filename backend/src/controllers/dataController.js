@@ -803,6 +803,7 @@ exports.generateCupom = async (req, res) => {
                         ${profile.contact_phone ? `<div>Tel: ${profile.contact_phone}</div>` : ''}
                         ${profile.full_address ? `<div>${profile.full_address}</div>` : ''}
                         <div>Período: ${formatDate(filters.startDate)} até ${formatDate(filters.endDate)}</div>
+                        <div style="border-bottom: 1px dashed #000; margin: 3px 0;"></div>
                     </div>
                     
                     <div class="table-header">
@@ -834,6 +835,7 @@ exports.generateCupom = async (req, res) => {
                                 <div class="col-preco"></div>
                                 <div class="col-subtotal">${formatCurrency(dayTotal)}</div>
                             </div>
+                            <div style="border-bottom: 1px dashed #ccc; margin: 2px 0;"></div>
                         `;
                     }).join('')}
                     
@@ -844,22 +846,13 @@ exports.generateCupom = async (req, res) => {
                         <div>Total -> ${formatCurrency(totalValue)}</div>
                     </div>
                     
-                    <div class="total-line">
-                        <div></div>
-                        <div>Desconto -> 0,00</div>
-                    </div>
-                    
-                    <div class="total-line">
-                        <div></div>
-                        <div>Pago -> 0,00</div>
-                    </div>
-                    
                     <div class="line"></div>
                     
-                    <div class="total-line" style="font-size: 11px;">
-                        <div></div>
-                        <div>Restante -> ${formatCurrency(totalValue)}</div>
+                    ${profile.logo_path ? `
+                    <div style="text-align: center; margin: 5px 0;">
+                        <img src="https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${profile.logo_path}" alt="Logo" style="max-width: 60px; max-height: 40px;">
                     </div>
+                    ` : ''}
                 </div>
             </body>
             </html>

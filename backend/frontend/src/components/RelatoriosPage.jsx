@@ -182,7 +182,7 @@ function RelatoriosPage() {
         <div>
             <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', marginBottom: '20px'}}>
                 <button className="btn" onClick={() => handleGenerateReport('normal')} style={{backgroundColor: '#17a2b8'}}>📄 Gerar Fechamento</button>
-                <button className="btn" onClick={() => handleGenerateReport('cupom')} style={{backgroundColor: '#28a745'}}>🧾 Cupom Fiscal (80mm)</button>
+                <button className="btn" onClick={() => handleGenerateReport('cupom')} style={{backgroundColor: '#28a745'}}>🧾 Cupom (80mm)</button>
             </div>
             <div className="card">
                 <h4>Filtros</h4>
