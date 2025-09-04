@@ -712,18 +712,42 @@ exports.generateCupom = async (req, res) => {
                                             FROM clients WHERE id = $1`, [clientId]);
         const profile = clientInfo.rows[0] || {};
         
-        const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+        const formatCurrency = (value) => parseFloat(value || 0).toFixed(2).replace('.', ',');
         const formatDate = (dateString) => {
             if (!dateString) return '';
             const date = new Date(dateString);
-            return new Date(date.getTime() + (date.getTimezoneOffset() * 60000)).toLocaleDateString('pt-BR');
+            return new Date(date.getTime() + (date.getTimezoneOffset() * 60000)).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
         };
 
-        filteredData.sort((a, b) => new Date(a.transaction_date) - new Date(b.transaction_date));
+        // Agrupar por data
+        const groupedByDate = {};
+        filteredData.forEach(item => {
+            const date = formatDate(item.transaction_date);
+            if (date && date !== '') {
+                if (!groupedByDate[date]) {
+                    groupedByDate[date] = [];
+                }
+                groupedByDate[date].push(item);
+            }
+        });
+
+        const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+            // Converter formato DD/MM para YYYY-MM-DD para comparação correta
+            const [dayA, monthA] = a.split('/');
+            const [dayB, monthB] = b.split('/');
+            const currentYear = new Date().getFullYear();
+            const dateA = new Date(`${currentYear}-${monthA.padStart(2, '0')}-${dayA.padStart(2, '0')}`);
+            const dateB = new Date(`${currentYear}-${monthB.padStart(2, '0')}-${dayB.padStart(2, '0')}`);
+            return dateA - dateB;
+        });
 
         const currentDate = new Date().toLocaleDateString('pt-BR');
-        const currentTime = new Date().toLocaleTimeString('pt-BR');
-        const cupomNumber = `CUP-${Date.now().toString().slice(-6)}`;
+        const currentTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const cupomNumber = Date.now().toString().slice(-6);
+        
+        // Calcular totais
+        const totalQuantity = filteredData.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
+        const totalValue = summary.ganhos || filteredData.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
         
         const html = `
             <!DOCTYPE html>
@@ -736,19 +760,27 @@ exports.generateCupom = async (req, res) => {
                     body { 
                         font-family: 'Courier New', monospace; 
                         margin: 0; 
-                        padding: 5mm; 
-                        width: 70mm;
-                        font-size: 10px;
-                        line-height: 1.2;
+                        padding: 2mm; 
+                        width: 76mm;
+                        font-size: 9px;
+                        line-height: 1.1;
                     }
                     .cupom { width: 100%; }
                     .center { text-align: center; }
+                    .right { text-align: right; }
                     .bold { font-weight: bold; }
-                    .line { border-bottom: 1px dashed #000; margin: 3px 0; }
-                    .item { display: flex; justify-content: space-between; margin: 1px 0; }
-                    .total { font-weight: bold; font-size: 12px; }
-                    .header { margin-bottom: 5px; }
-                    .footer { margin-top: 5px; font-size: 8px; }
+                    .line { border-bottom: 1px dashed #000; margin: 2px 0; }
+                    .header { margin-bottom: 3px; font-size: 8px; }
+                    .table-header { display: flex; margin: 2px 0; font-weight: bold; font-size: 8px; }
+                    .col-data { width: 12%; }
+                    .col-qtd { width: 8%; text-align: center; }
+                    .col-desc { width: 45%; }
+                    .col-preco { width: 15%; text-align: right; }
+                    .col-subtotal { width: 20%; text-align: right; }
+                    .item-row { display: flex; margin: 1px 0; font-size: 8px; }
+                    .total-day { display: flex; margin: 1px 0; font-size: 8px; }
+                    .total-line { display: flex; justify-content: space-between; font-weight: bold; margin: 1px 0; }
+                    .footer { margin-top: 3px; font-size: 8px; }
                     .no-print { display: none; }
                     @media screen {
                         .no-print { display: block; text-align: center; margin: 10px 0; }
@@ -766,70 +798,67 @@ exports.generateCupom = async (req, res) => {
                 
                 <div class="cupom">
                     <div class="header center">
-                        <div class="bold">${(profile.company_name || 'EMPRESA').toUpperCase()}</div>
-                        ${profile.cnpj_cpf ? `<div>CNPJ: ${profile.cnpj_cpf}</div>` : ''}
-                        ${profile.full_address ? `<div>${profile.full_address}</div>` : ''}
+                        <div>${profile.company_name || 'EMPRESA'}</div>
+                        ${profile.cnpj_cpf ? `<div>CNPJ/CPF: ${profile.cnpj_cpf}</div>` : ''}
                         ${profile.contact_phone ? `<div>Tel: ${profile.contact_phone}</div>` : ''}
+                        ${profile.full_address ? `<div>${profile.full_address}</div>` : ''}
+                        <div>Período: ${formatDate(filters.startDate)} até ${formatDate(filters.endDate)}</div>
+                    </div>
+                    
+                    <div class="table-header">
+                        <div class="col-data">Data</div>
+                        <div class="col-qtd">Qtd</div>
+                        <div class="col-desc">Descrição</div>
+                        <div class="col-preco">Preço</div>
+                        <div class="col-subtotal">Subtotal</div>
+                    </div>
+                    
+                    ${sortedDates.map(date => {
+                        const dayItems = groupedByDate[date];
+                        const dayTotal = dayItems.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+                        
+                        return `
+                            ${dayItems.map(item => `
+                                <div class="item-row">
+                                    <div class="col-data">${date}</div>
+                                    <div class="col-qtd">${Math.floor(parseFloat(item.quantity || 0))}</div>
+                                    <div class="col-desc">${(item.description || '').substring(0, 15)}</div>
+                                    <div class="col-preco">${formatCurrency(item.unit_price)}</div>
+                                    <div class="col-subtotal">${formatCurrency(item.total_price)}</div>
+                                </div>
+                            `).join('')}
+                            <div class="total-day">
+                                <div class="col-data"></div>
+                                <div class="col-qtd"></div>
+                                <div class="col-desc">Total do Dia: ${formatCurrency(dayTotal)}</div>
+                                <div class="col-preco"></div>
+                                <div class="col-subtotal">${formatCurrency(dayTotal)}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                    
+                    <div class="line"></div>
+                    
+                    <div class="total-line">
+                        <div>Volumes: ${formatCurrency(totalQuantity)}</div>
+                        <div>Total -> ${formatCurrency(totalValue)}</div>
+                    </div>
+                    
+                    <div class="total-line">
+                        <div></div>
+                        <div>Desconto -> 0,00</div>
+                    </div>
+                    
+                    <div class="total-line">
+                        <div></div>
+                        <div>Pago -> 0,00</div>
                     </div>
                     
                     <div class="line"></div>
                     
-                    <div class="center">
-                        <div class="bold">CUPOM FISCAL</div>
-                        <div>Nº ${cupomNumber}</div>
-                        <div>${currentDate} ${currentTime}</div>
-                    </div>
-                    
-                    <div class="line"></div>
-                    
-                    ${employeeName ? `<div>Funcionário: ${employeeName}</div>` : ''}
-                    <div>Período: ${formatDate(filters.startDate)} a ${formatDate(filters.endDate)}</div>
-                    
-                    <div class="line"></div>
-                    
-                    ${filteredData.map(item => `
-                        <div class="item">
-                            <div style="width: 70%;">${item.description || ''}</div>
-                        </div>
-                        <div class="item">
-                            <div>${parseFloat(item.quantity || 0).toFixed(0)}x ${formatCurrency(item.unit_price || 0)}</div>
-                            <div>${formatCurrency(item.total_price || 0)}</div>
-                        </div>
-                    `).join('')}
-                    
-                    <div class="line"></div>
-                    
-                    <div class="item total">
-                        <div>SUBTOTAL VENDAS:</div>
-                        <div>${formatCurrency(summary.ganhos)}</div>
-                    </div>
-                    
-                    <div class="item total">
-                        <div>SUBTOTAL COMPRAS:</div>
-                        <div>${formatCurrency(summary.gastos)}</div>
-                    </div>
-                    
-                    <div class="line"></div>
-                    
-                    <div class="item total" style="font-size: 14px;">
-                        <div>TOTAL LÍQUIDO:</div>
-                        <div>${formatCurrency(summary.saldo)}</div>
-                    </div>
-                    
-                    <div class="line"></div>
-                    
-                    ${profile.pix ? `
-                    <div class="center">
-                        <div class="bold">PIX</div>
-                        <div style="word-break: break-all;">${profile.pix}</div>
-                    </div>
-                    <div class="line"></div>
-                    ` : ''}
-                    
-                    <div class="footer center">
-                        <div>Obrigado pela preferência!</div>
-                        ${profile.email ? `<div>${profile.email}</div>` : ''}
-                        <div style="margin-top: 5px;">Sistema ARK</div>
+                    <div class="total-line" style="font-size: 11px;">
+                        <div></div>
+                        <div>Restante -> ${formatCurrency(totalValue)}</div>
                     </div>
                 </div>
             </body>

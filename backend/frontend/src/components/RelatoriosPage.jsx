@@ -37,23 +37,42 @@ function RelatoriosPage() {
 
     useEffect(() => {
         const loggedInUser = JSON.parse(localStorage.getItem('user'));
-        if (loggedInUser) {
-            setUser(loggedInUser);
+        const token = localStorage.getItem('token');
+        
+        if (!loggedInUser || !token) {
+            window.location.href = '/login';
+            return;
         }
+        
+        setUser(loggedInUser);
 
         const fetchData = async () => {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const DATA_API_URL = `${API_URL}/api/data`; // <-- ADICIONADO para simplificar
+            
+            if (!token) {
+                console.error('Token não encontrado');
+                setLoading(false);
+                return;
+            }
+            
+            const DATA_API_URL = `${API_URL}/api/data`;
 
             try {
                 const [trxResponse, empResponse, itemsResponse] = await Promise.all([
-                    axios.get(`${DATA_API_URL}/transactions`, { headers: { 'x-auth-token': token } }), // <-- ALTERADO
-                    axios.get(`${DATA_API_URL}/employees`, { headers: { 'x-auth-token': token } }),    // <-- ALTERADO
-                    axios.get(`${DATA_API_URL}/items`, { headers: { 'x-auth-token': token } })          // <-- ALTERADO
+                    axios.get(`${DATA_API_URL}/transactions`, { headers: { 'x-auth-token': token } }),
+                    axios.get(`${DATA_API_URL}/employees`, { headers: { 'x-auth-token': token } }),
+                    axios.get(`${DATA_API_URL}/items`, { headers: { 'x-auth-token': token } })
                 ]);
                 setAllData({ transactions: trxResponse.data, employees: empResponse.data, items: itemsResponse.data });
-            } catch (error) { console.error("Erro ao buscar dados", error); } finally { setLoading(false); }
+            } catch (error) { 
+                console.error("Erro ao buscar dados", error);
+                if (error.response?.status === 403 || error.response?.status === 401) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                }
+            } finally { setLoading(false); }
         };
         fetchData();
     }, []);
@@ -116,6 +135,13 @@ function RelatoriosPage() {
 
     const handleGenerateReport = async (formato = 'normal') => {
         const token = localStorage.getItem('token');
+        
+        if (!token) {
+            alert('Sessão expirada. Por favor, faça login novamente.');
+            window.location.href = '/login';
+            return;
+        }
+        
         try {
             const employeeName = filters.employeeId === 'todos' ? null : allData.employees.find(e => e.id === filters.employeeId)?.name;
             const reportData = {
@@ -128,13 +154,26 @@ function RelatoriosPage() {
             };
             
             const endpoint = formato === 'cupom' ? 'generate-cupom' : 'generate-report';
-            const response = await axios.post(`${API_URL}/api/data/${endpoint}`, reportData, { headers: { 'x-auth-token': token } });
+            const response = await axios.post(`${API_URL}/api/data/${endpoint}`, reportData, { 
+                headers: { 'x-auth-token': token },
+                timeout: 30000
+            });
             
             const reportHtml = response.data;
             const reportWindow = window.open('', '_blank');
             reportWindow.document.write(reportHtml);
             reportWindow.document.close();
-        } catch (error) { console.error("Erro ao gerar relatório", error); }
+        } catch (error) { 
+            console.error("Erro ao gerar relatório", error);
+            if (error.response?.status === 403 || error.response?.status === 401) {
+                alert('Sessão expirada. Por favor, faça login novamente.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            } else {
+                alert('Erro ao gerar relatório. Tente novamente.');
+            }
+        }
     };
 
     if (loading) return <div className="card"><p>A carregar dados do Controle Financeiro...</p></div>;
