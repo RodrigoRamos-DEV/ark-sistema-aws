@@ -6,7 +6,12 @@ const nodemailer = require('nodemailer');
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  console.log('Login attempt for:', email);
+  
+  if (!email || !password) {
+    return res.status(400).json({ msg: 'Email e senha são obrigatórios.' });
+  }
+  
+  console.log('Login attempt for:', encodeURIComponent(email));
   try {
     const userResult = await db.query(
         'SELECT u.*, c.company_name, c.license_expires_at, c.license_status, COALESCE(c.client_type, \'produtor\') as client_type FROM users u LEFT JOIN clients c ON u.client_id = c.id WHERE u.email = $1',
@@ -14,7 +19,7 @@ exports.login = async (req, res) => {
     );
 
     if (userResult.rows.length === 0) {
-      console.log('User not found:', email);
+      console.log('User not found:', encodeURIComponent(email));
       return res.status(400).json({ msg: 'Email ou senha inválidos.' });
     }
 
@@ -44,11 +49,11 @@ exports.login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      console.log('Password mismatch for:', email);
+      console.log('Password mismatch for:', encodeURIComponent(email));
       return res.status(400).json({ msg: 'Email ou senha inválidos.' });
     }
     
-    console.log('Login successful for:', email);
+    console.log('Login successful for:', encodeURIComponent(email));
     
     const payload = {
         user: {
@@ -131,7 +136,7 @@ exports.registerClient = async (req, res) => {
             whatsapp: "+55 21 97304-4415"
         });
     } catch (err) {
-        console.error('Erro no registro:', err.message);
+        console.error('Erro no registro:', encodeURIComponent(err.message));
         if (err.code === '23505') { 
             return res.status(400).json({ msg: 'Este email já está em uso.' }); 
         }
@@ -158,7 +163,7 @@ exports.forgotPassword = async (req, res) => {
         res.json({ msg: "Se um utilizador com este e-mail existir, um link de redefinição de senha foi enviado." });
     } catch (err) {
         await db.query('UPDATE users SET password_reset_token = NULL, password_reset_expires = NULL WHERE email = $1', [req.body.email]);
-        console.error("Erro no forgotPassword:", err.message);
+        console.error('Erro no forgotPassword:', encodeURIComponent(err.message));
         res.status(500).send('Erro no servidor ao tentar enviar o e-mail de redefinição.');
     }
 };
@@ -176,7 +181,7 @@ exports.resetPassword = async (req, res) => {
         await db.query( 'UPDATE users SET password_hash = $1, password_reset_token = NULL, password_reset_expires = NULL WHERE id = $2', [passwordHash, user.id] );
         res.json({ msg: "Senha redefinida com sucesso! Pode agora fazer o login." });
     } catch (err) {
-        console.error(err.message);
+        console.error('Reset password error:', encodeURIComponent(err.message));
         res.status(500).send('Erro no servidor.');
     }
 };

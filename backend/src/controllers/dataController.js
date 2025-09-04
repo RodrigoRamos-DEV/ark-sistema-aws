@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const handlebars = require('handlebars');
 const AWS = require('aws-sdk');
+const QRCode = require('qrcode');
 
 // --- CONFIGURAÇÃO DA AWS S3 ---
 const s3 = new AWS.S3({
@@ -99,19 +100,48 @@ exports.deleteEmployee = async (req, res) => {
 
 exports.getAllItems = async (req, res) => {
     try {
-        const result = await db.query('SELECT id, type, name FROM items WHERE client_id = $1 ORDER BY name', [req.user.clientId]);
+        const result = await db.query('SELECT id, type, name, dados_extras FROM items WHERE client_id = $1 ORDER BY name', [req.user.clientId]);
         const items = { produto: [], comprador: [], compra: [], fornecedor: [] };
-        result.rows.forEach(item => { if (items[item.type]) { items[item.type].push({ id: item.id, name: item.name }); } });
+        result.rows.forEach(item => { 
+            if (items[item.type]) { 
+                const itemData = { id: item.id, name: item.name };
+                // Para clientes e fornecedores, incluir dados extras
+                if ((item.type === 'comprador' || item.type === 'fornecedor') && item.dados_extras) {
+                    try {
+                        const parsedData = JSON.parse(item.dados_extras);
+                        Object.assign(itemData, parsedData);
+                    } catch (e) {}
+                }
+                items[item.type].push(itemData);
+            } 
+        });
         res.json(items);
     } catch (err) {  console.error(err.message); res.status(500).json({ error: 'Erro no servidor ao buscar itens.' });  }
 };
 
 exports.addItem = async (req, res) => {
-    const { type, name } = req.body;
+    const { type, name, ...extraData } = req.body;
     if (!type || !name) { return res.status(400).json({ error: 'Tipo e nome são obrigatórios.' }); }
+    
     try {
-        const result = await db.query('INSERT INTO items (client_id, type, name) VALUES ($1, $2, $3) RETURNING id, name, type', [req.user.clientId, type, name]);
-        res.status(201).json(result.rows[0]);
+        // Para clientes e fornecedores, salvar dados extras como JSON
+        if (type === 'comprador' || type === 'fornecedor') {
+            const result = await db.query(
+                'INSERT INTO items (client_id, type, name, dados_extras) VALUES ($1, $2, $3, $4) RETURNING *',
+                [req.user.clientId, type, name, JSON.stringify(extraData)]
+            );
+            const item = result.rows[0];
+            if (item.dados_extras) {
+                try {
+                    const parsedData = JSON.parse(item.dados_extras);
+                    Object.assign(item, parsedData);
+                } catch (e) {}
+            }
+            res.status(201).json(item);
+        } else {
+            const result = await db.query('INSERT INTO items (client_id, type, name) VALUES ($1, $2, $3) RETURNING id, name, type', [req.user.clientId, type, name]);
+            res.status(201).json(result.rows[0]);
+        }
     } catch (err) {
         console.error(err.message);
         if (err.code === '23505') { return res.status(400).json({ error: 'Este item já existe.' }); }
@@ -120,13 +150,52 @@ exports.addItem = async (req, res) => {
 };
 
 exports.updateItem = async (req, res) => {
-    const { name } = req.body;
+    const { name, ...extraData } = req.body;
     const { id } = req.params;
+    
     try {
-        const result = await db.query('UPDATE items SET name = $1 WHERE id = $2 AND client_id = $3 RETURNING id, name, type', [name, id, req.user.clientId]);
-        if (result.rowCount === 0) { return res.status(404).json({ error: 'Item não encontrado.' }); }
-        res.json(result.rows[0]);
-    } catch (err) {  console.error(err.message); res.status(500).json({ error: 'Erro no servidor ao atualizar item.' });  }
+        // Verificar o tipo do item
+        const itemCheck = await db.query('SELECT type FROM items WHERE id = $1 AND client_id = $2', [id, req.user.clientId]);
+        if (itemCheck.rowCount === 0) { return res.status(404).json({ error: 'Item não encontrado.' }); }
+        
+        const itemType = itemCheck.rows[0].type;
+        
+        // Para clientes e fornecedores, salvar dados extras
+        if (itemType === 'comprador' || itemType === 'fornecedor') {
+            // Buscar o nome antigo antes de atualizar
+            const oldItemResult = await db.query('SELECT name FROM items WHERE id = $1 AND client_id = $2', [id, req.user.clientId]);
+            const oldName = oldItemResult.rows[0]?.name;
+            
+            const result = await db.query(
+                'UPDATE items SET name = $1, dados_extras = $2 WHERE id = $3 AND client_id = $4 RETURNING *',
+                [name, JSON.stringify(extraData), id, req.user.clientId]
+            );
+            const item = result.rows[0];
+            
+            // Se o nome mudou, atualizar nas transações
+            if (oldName && oldName !== name) {
+                const transactionType = itemType === 'comprador' ? 'venda' : 'gasto';
+                await db.query(
+                    'UPDATE transactions SET category = $1 WHERE category = $2 AND type = $3 AND client_id = $4',
+                    [name, oldName, transactionType, req.user.clientId]
+                );
+            }
+            
+            if (item.dados_extras) {
+                try {
+                    const parsedData = JSON.parse(item.dados_extras);
+                    Object.assign(item, parsedData);
+                } catch (e) {}
+            }
+            res.json(item);
+        } else {
+            const result = await db.query('UPDATE items SET name = $1 WHERE id = $2 AND client_id = $3 RETURNING id, name, type', [name, id, req.user.clientId]);
+            res.json(result.rows[0]);
+        }
+    } catch (err) {  
+        console.error(err.message); 
+        res.status(500).json({ error: 'Erro no servidor ao atualizar item.' });  
+    }
 };
 
 exports.deleteItem = async (req, res) => {
@@ -438,10 +507,10 @@ exports.updateTransaction = async (req, res) => {
 
 exports.deleteTransaction = async (req, res) => {
     const { id } = req.params;
-    console.log(`Tentando deletar transação ID: ${id} para cliente: ${req.user.clientId}`);
+    console.log('Tentando deletar transação ID:', encodeURIComponent(id), 'para cliente:', req.user.clientId);
     try {
         const result = await db.query('DELETE FROM transactions WHERE id = $1 AND client_id = $2', [id, req.user.clientId]);
-        console.log(`Resultado da deleção: ${result.rowCount} linha(s) afetada(s)`);
+        console.log('Resultado da deleção:', result.rowCount, 'linha(s) afetada(s)');
         if (result.rowCount === 0) { 
             console.log('Transação não encontrada');
             return res.status(404).json({ error: 'Transação não encontrada ou não pertence a este cliente.' }); 
@@ -449,7 +518,7 @@ exports.deleteTransaction = async (req, res) => {
         console.log('Transação deletada com sucesso');
         res.json({ msg: 'Transação deletada com sucesso.' });
     } catch (err) {
-        console.error('Erro ao deletar transação:', err.message);
+        console.error('Erro ao deletar transação:', encodeURIComponent(err.message));
         res.status(500).json({ error: 'Erro no servidor ao deletar transação.' });
     }
 };
@@ -547,7 +616,6 @@ exports.generateReport = async (req, res) => {
         const corTema = profile.cor_tema || '#2c5aa0';
         
         // Gerar QR Code
-        const QRCode = require('qrcode');
         let qrCodeDataUrl = '';
         if (profile.pix || profile.email || profile.contact_phone) {
             try {
@@ -701,6 +769,44 @@ exports.generateReport = async (req, res) => {
     }
 };
 
+// Função para buscar bairro do cliente/fornecedor
+const getBairroClienteFornecedor = async (clientId, viewType, filters) => {
+    try {
+        let itemName = null;
+        let itemType = null;
+        
+        if (viewType === 'vendas' && filters.buyer !== 'todos') {
+            itemName = filters.buyer;
+            itemType = 'comprador';
+        } else if (viewType === 'gastos' && filters.supplier !== 'todos') {
+            itemName = filters.supplier;
+            itemType = 'fornecedor';
+        }
+        
+        if (itemName && itemType) {
+            const result = await db.query(
+                'SELECT dados_extras FROM items WHERE client_id = $1 AND type = $2 AND name = $3',
+                [clientId, itemType, itemName]
+            );
+            
+            if (result.rows.length > 0 && result.rows[0].dados_extras) {
+                try {
+                    const dadosExtras = JSON.parse(result.rows[0].dados_extras);
+                    if (dadosExtras.endereco_bairro) {
+                        return `<div style="text-align: left;">Bairro: ${dadosExtras.endereco_bairro}</div>`;
+                    }
+                } catch (e) {
+                    console.log('Erro ao parsear dados extras:', e);
+                }
+            }
+        }
+        return '';
+    } catch (error) {
+        console.log('Erro ao buscar bairro:', error);
+        return '';
+    }
+};
+
 exports.generateCupom = async (req, res) => {
     const clientId = req.user.clientId;
     const { filteredData, summary, filters, viewType, employeeName } = req.body;
@@ -741,6 +847,9 @@ exports.generateCupom = async (req, res) => {
             return dateA - dateB;
         });
 
+        // Buscar bairro do cliente/fornecedor
+        const bairroInfo = await getBairroClienteFornecedor(clientId, viewType, filters);
+        
         const currentDate = new Date().toLocaleDateString('pt-BR');
         const currentTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const cupomNumber = Date.now().toString().slice(-6);
@@ -802,6 +911,10 @@ exports.generateCupom = async (req, res) => {
                         ${profile.cnpj_cpf ? `<div>CNPJ/CPF: ${profile.cnpj_cpf}</div>` : ''}
                         ${profile.contact_phone ? `<div>Tel: ${profile.contact_phone}</div>` : ''}
                         ${profile.full_address ? `<div>${profile.full_address}</div>` : ''}
+                        <div style="border-bottom: 1px dashed #ccc; margin: 3px 0;"></div>
+                        ${viewType === 'vendas' && filters.buyer !== 'todos' ? `<div style="text-align: left;">Cliente: ${filters.buyer}</div>` : ''}
+                        ${viewType === 'gastos' && filters.supplier !== 'todos' ? `<div style="text-align: left;">Fornecedor: ${filters.supplier}</div>` : ''}
+                        ${bairroInfo}
                         <div>Período: ${formatDate(filters.startDate)} até ${formatDate(filters.endDate)}</div>
                         <div style="border-bottom: 1px dashed #000; margin: 3px 0;"></div>
                     </div>
