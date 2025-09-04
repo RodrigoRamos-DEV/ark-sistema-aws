@@ -769,6 +769,26 @@ exports.generateReport = async (req, res) => {
     }
 };
 
+// Função para gerar rodapé com PIX e QR Code
+const generatePixFooter = async (pixKey) => {
+    try {
+        const qrCodeDataUrl = await QRCode.toDataURL(pixKey, { width: 60, margin: 1 });
+        return `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 5px 0; font-size: 8px;">
+                <div style="text-align: left;">
+                    <div>PIX:</div>
+                    <div>${pixKey}</div>
+                </div>
+                <div style="text-align: right;">
+                    <img src="${qrCodeDataUrl}" alt="QR Code PIX" style="width: 40px; height: 40px;">
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        return `<div style="text-align: center; font-size: 8px; margin: 2px 0;">PIX: ${pixKey}</div>`;
+    }
+};
+
 // Função para buscar bairro do cliente/fornecedor
 const getBairroClienteFornecedor = async (clientId, viewType, filters) => {
     try {
@@ -850,6 +870,9 @@ exports.generateCupom = async (req, res) => {
         // Buscar bairro do cliente/fornecedor
         const bairroInfo = await getBairroClienteFornecedor(clientId, viewType, filters);
         
+        // Gerar rodapé PIX
+        const pixFooter = profile.pix ? await generatePixFooter(profile.pix) : '';
+        
         const currentDate = new Date().toLocaleDateString('pt-BR');
         const currentTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const cupomNumber = Date.now().toString().slice(-6);
@@ -906,18 +929,25 @@ exports.generateCupom = async (req, res) => {
                 </div>
                 
                 <div class="cupom">
-                    <div class="header center">
-                        <div>${profile.company_name || 'EMPRESA'}</div>
-                        ${profile.cnpj_cpf ? `<div>CNPJ/CPF: ${profile.cnpj_cpf}</div>` : ''}
-                        ${profile.contact_phone ? `<div>Tel: ${profile.contact_phone}</div>` : ''}
-                        ${profile.full_address ? `<div>${profile.full_address}</div>` : ''}
-                        <div style="border-bottom: 1px dashed #ccc; margin: 3px 0;"></div>
-                        ${viewType === 'vendas' && filters.buyer !== 'todos' ? `<div style="text-align: left;">Cliente: ${filters.buyer}</div>` : ''}
-                        ${viewType === 'gastos' && filters.supplier !== 'todos' ? `<div style="text-align: left;">Fornecedor: ${filters.supplier}</div>` : ''}
-                        ${bairroInfo}
-                        <div>Período: ${formatDate(filters.startDate)} até ${formatDate(filters.endDate)}</div>
-                        <div style="border-bottom: 1px dashed #000; margin: 3px 0;"></div>
+                    <div class="header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px;">
+                        <div style="text-align: left; flex: 1;">
+                            <div>${profile.company_name || 'EMPRESA'}</div>
+                            ${profile.cnpj_cpf ? `<div>CNPJ/CPF: ${profile.cnpj_cpf}</div>` : ''}
+                            ${profile.contact_phone ? `<div>Tel: ${profile.contact_phone}</div>` : ''}
+                            ${profile.full_address ? `<div>${profile.full_address}</div>` : ''}
+                        </div>
+                        ${profile.logo_path ? `
+                        <div style="text-align: right;">
+                            <img src="https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${profile.logo_path}" alt="Logo" style="max-width: 50px; max-height: 35px;">
+                        </div>
+                        ` : ''}
                     </div>
+                    <div style="border-bottom: 1px dashed #ccc; margin: 3px 0;"></div>
+                    ${viewType === 'vendas' && filters.buyer !== 'todos' ? `<div style="text-align: left;">Cliente: ${filters.buyer}</div>` : ''}
+                    ${viewType === 'gastos' && filters.supplier !== 'todos' ? `<div style="text-align: left;">Fornecedor: ${filters.supplier}</div>` : ''}
+                    ${bairroInfo}
+                    <div style="text-align: center;">Período: ${formatDate(filters.startDate)} até ${formatDate(filters.endDate)}</div>
+                    <div style="border-bottom: 1px dashed #000; margin: 3px 0;"></div>
                     
                     <div class="table-header">
                         <div class="col-data">Data</div>
@@ -961,11 +991,7 @@ exports.generateCupom = async (req, res) => {
                     
                     <div class="line"></div>
                     
-                    ${profile.logo_path ? `
-                    <div style="text-align: center; margin: 5px 0;">
-                        <img src="https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${profile.logo_path}" alt="Logo" style="max-width: 60px; max-height: 40px;">
-                    </div>
-                    ` : ''}
+                    ${pixFooter}
                 </div>
             </body>
             </html>
