@@ -40,6 +40,7 @@ router.delete('/attachments/:attachmentId', dataController.deleteAttachment);
 
 // Rota para o Relatório
 router.post('/generate-report', dataController.generateReport);
+router.post('/generate-cupom', dataController.generateCupom);
 
 // NOVAS ROTAS PARA PRODUTOS UNIFICADOS
 router.get('/produtos', dataController.getProdutos);

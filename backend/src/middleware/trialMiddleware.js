@@ -33,9 +33,9 @@ const checkTrialStatus = async (req, res, next) => {
         if (client.license_status === 'Trial Expirado') {
             // Permitir apenas rotas de leitura (GET) e algumas específicas
             const allowedMethods = ['GET'];
-            const allowedPaths = ['/api/auth/logout', '/api/profile'];
+            const allowedPaths = ['/api/auth/logout', '/api/profile', '/api/data/generate-report', '/api/data/generate-cupom'];
             
-            if (!allowedMethods.includes(req.method) && !allowedPaths.includes(req.path)) {
+            if (!allowedMethods.includes(req.method) && !allowedPaths.some(path => req.path.includes(path))) {
                 return res.status(403).json({ 
                     msg: 'Trial expirado. Entre em contato para renovar sua licença.',
                     trialExpired: true,

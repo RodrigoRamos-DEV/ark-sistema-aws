@@ -701,6 +701,148 @@ exports.generateReport = async (req, res) => {
     }
 };
 
+exports.generateCupom = async (req, res) => {
+    const clientId = req.user.clientId;
+    const { filteredData, summary, filters, viewType, employeeName } = req.body;
+    
+    try {
+        const clientInfo = await db.query(`SELECT company_name, cnpj_cpf, contact_phone, email, pix, full_address, 
+                                                   inscricao_estadual, inscricao_municipal, logo_path, cor_tema,
+                                                   cep, endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_uf 
+                                            FROM clients WHERE id = $1`, [clientId]);
+        const profile = clientInfo.rows[0] || {};
+        
+        const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+        const formatDate = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return new Date(date.getTime() + (date.getTimezoneOffset() * 60000)).toLocaleDateString('pt-BR');
+        };
+
+        filteredData.sort((a, b) => new Date(a.transaction_date) - new Date(b.transaction_date));
+
+        const currentDate = new Date().toLocaleDateString('pt-BR');
+        const currentTime = new Date().toLocaleTimeString('pt-BR');
+        const cupomNumber = `CUP-${Date.now().toString().slice(-6)}`;
+        
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Cupom Fiscal</title>
+                <style>
+                    @page { size: 80mm auto; margin: 0; }
+                    body { 
+                        font-family: 'Courier New', monospace; 
+                        margin: 0; 
+                        padding: 5mm; 
+                        width: 70mm;
+                        font-size: 10px;
+                        line-height: 1.2;
+                    }
+                    .cupom { width: 100%; }
+                    .center { text-align: center; }
+                    .bold { font-weight: bold; }
+                    .line { border-bottom: 1px dashed #000; margin: 3px 0; }
+                    .item { display: flex; justify-content: space-between; margin: 1px 0; }
+                    .total { font-weight: bold; font-size: 12px; }
+                    .header { margin-bottom: 5px; }
+                    .footer { margin-top: 5px; font-size: 8px; }
+                    .no-print { display: none; }
+                    @media screen {
+                        .no-print { display: block; text-align: center; margin: 10px 0; }
+                        .print-btn { background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+                        body { background: #f5f5f5; padding: 20px; }
+                        .cupom { background: white; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                    }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="no-print">
+                    <button class="print-btn" onclick="window.print()">🖨️ Imprimir Cupom</button>
+                </div>
+                
+                <div class="cupom">
+                    <div class="header center">
+                        <div class="bold">${(profile.company_name || 'EMPRESA').toUpperCase()}</div>
+                        ${profile.cnpj_cpf ? `<div>CNPJ: ${profile.cnpj_cpf}</div>` : ''}
+                        ${profile.full_address ? `<div>${profile.full_address}</div>` : ''}
+                        ${profile.contact_phone ? `<div>Tel: ${profile.contact_phone}</div>` : ''}
+                    </div>
+                    
+                    <div class="line"></div>
+                    
+                    <div class="center">
+                        <div class="bold">CUPOM FISCAL</div>
+                        <div>Nº ${cupomNumber}</div>
+                        <div>${currentDate} ${currentTime}</div>
+                    </div>
+                    
+                    <div class="line"></div>
+                    
+                    ${employeeName ? `<div>Funcionário: ${employeeName}</div>` : ''}
+                    <div>Período: ${formatDate(filters.startDate)} a ${formatDate(filters.endDate)}</div>
+                    
+                    <div class="line"></div>
+                    
+                    ${filteredData.map(item => `
+                        <div class="item">
+                            <div style="width: 70%;">${item.description || ''}</div>
+                        </div>
+                        <div class="item">
+                            <div>${parseFloat(item.quantity || 0).toFixed(0)}x ${formatCurrency(item.unit_price || 0)}</div>
+                            <div>${formatCurrency(item.total_price || 0)}</div>
+                        </div>
+                    `).join('')}
+                    
+                    <div class="line"></div>
+                    
+                    <div class="item total">
+                        <div>SUBTOTAL VENDAS:</div>
+                        <div>${formatCurrency(summary.ganhos)}</div>
+                    </div>
+                    
+                    <div class="item total">
+                        <div>SUBTOTAL COMPRAS:</div>
+                        <div>${formatCurrency(summary.gastos)}</div>
+                    </div>
+                    
+                    <div class="line"></div>
+                    
+                    <div class="item total" style="font-size: 14px;">
+                        <div>TOTAL LÍQUIDO:</div>
+                        <div>${formatCurrency(summary.saldo)}</div>
+                    </div>
+                    
+                    <div class="line"></div>
+                    
+                    ${profile.pix ? `
+                    <div class="center">
+                        <div class="bold">PIX</div>
+                        <div style="word-break: break-all;">${profile.pix}</div>
+                    </div>
+                    <div class="line"></div>
+                    ` : ''}
+                    
+                    <div class="footer center">
+                        <div>Obrigado pela preferência!</div>
+                        ${profile.email ? `<div>${profile.email}</div>` : ''}
+                        <div style="margin-top: 5px;">Sistema ARK</div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        res.send(html);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("<h1>Erro interno ao gerar o cupom.</h1>");
+    }
+};
+
 exports.addAttachment = async (req, res) => {
     upload.single('attachment')(req, res, async function (err) {
         if (err) { return res.status(500).json({ error: "Erro no upload do anexo." }); }

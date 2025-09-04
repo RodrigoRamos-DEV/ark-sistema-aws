@@ -114,7 +114,7 @@ function RelatoriosPage() {
 
     const handleFilterChange = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
 
-    const handleGenerateReport = async () => {
+    const handleGenerateReport = async (formato = 'normal') => {
         const token = localStorage.getItem('token');
         try {
             const employeeName = filters.employeeId === 'todos' ? null : allData.employees.find(e => e.id === filters.employeeId)?.name;
@@ -123,10 +123,12 @@ function RelatoriosPage() {
                 summary,
                 filters,
                 viewType,
-                employeeName
+                employeeName,
+                formato
             };
             
-            const response = await axios.post(`${API_URL}/api/data/generate-report`, reportData, { headers: { 'x-auth-token': token } }); // <-- ALTERADO
+            const endpoint = formato === 'cupom' ? 'generate-cupom' : 'generate-report';
+            const response = await axios.post(`${API_URL}/api/data/${endpoint}`, reportData, { headers: { 'x-auth-token': token } });
             
             const reportHtml = response.data;
             const reportWindow = window.open('', '_blank');
@@ -139,8 +141,9 @@ function RelatoriosPage() {
 
     return (
         <div>
-            <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '20px'}}>
-                <button className="btn" onClick={handleGenerateReport} style={{backgroundColor: '#17a2b8'}}>📄 Gerar Fechamento</button>
+            <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', marginBottom: '20px'}}>
+                <button className="btn" onClick={() => handleGenerateReport('normal')} style={{backgroundColor: '#17a2b8'}}>📄 Gerar Fechamento</button>
+                <button className="btn" onClick={() => handleGenerateReport('cupom')} style={{backgroundColor: '#28a745'}}>🧾 Cupom Fiscal (80mm)</button>
             </div>
             <div className="card">
                 <h4>Filtros</h4>

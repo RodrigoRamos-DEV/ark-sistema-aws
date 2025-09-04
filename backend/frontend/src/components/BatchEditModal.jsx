@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 
 function BatchEditModal({ isOpen, onClose, onSave, transactions, items }) {
     const [editedTransactions, setEditedTransactions] = useState([]);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (transactions && transactions.length > 0) {
@@ -11,16 +12,45 @@ function BatchEditModal({ isOpen, onClose, onSave, transactions, items }) {
     }, [transactions]);
 
     const handleFieldChange = (index, field, value) => {
-        setEditedTransactions(prev => prev.map((trx, i) => 
-            i === index ? { ...trx, [field]: value } : trx
-        ));
+        setEditedTransactions(prev => prev.map((trx, i) => {
+            if (i === index) {
+                const updatedTrx = { ...trx, [field]: value };
+                
+                // Se mudou a quantidade, recalcular o valor total baseado no preço unitário
+                if (field === 'quantity') {
+                    const unitPrice = trx.unit_price || (trx.total_price / (trx.quantity || 1)) || 0;
+                    updatedTrx.total_price = (unitPrice * value).toFixed(2);
+                    updatedTrx.unit_price = unitPrice;
+                }
+                
+                return updatedTrx;
+            }
+            return trx;
+        }));
     };
 
-    const handleSaveAll = () => {
-        editedTransactions.forEach(trx => {
-            onSave(trx, true);
-        });
-        toast.success(`${editedTransactions.length} lançamentos salvos!`);
+    const handleSaveAll = async () => {
+        setSaving(true);
+        let savedCount = 0;
+        let errorCount = 0;
+        
+        for (const trx of editedTransactions) {
+            try {
+                await onSave(trx, true);
+                savedCount++;
+            } catch (error) {
+                errorCount++;
+                console.error('Erro ao salvar transação:', error);
+            }
+        }
+        
+        if (errorCount === 0) {
+            toast.success(`${savedCount} lançamentos salvos com sucesso!`);
+        } else {
+            toast.warning(`${savedCount} salvos, ${errorCount} com erro`);
+        }
+        
+        setSaving(false);
         onClose();
     };
 
@@ -81,7 +111,9 @@ function BatchEditModal({ isOpen, onClose, onSave, transactions, items }) {
                                 <th style={{padding: '10px', textAlign: 'left'}}>Data</th>
                                 <th style={{padding: '10px', textAlign: 'left'}}>Produto/Compra</th>
                                 <th style={{padding: '10px', textAlign: 'left'}}>Cliente/Fornecedor</th>
-                                <th style={{padding: '10px', textAlign: 'left'}}>Valor</th>
+                                <th style={{padding: '10px', textAlign: 'left'}}>Qtd</th>
+                                <th style={{padding: '10px', textAlign: 'left'}}>Preço Unit.</th>
+                                <th style={{padding: '10px', textAlign: 'left'}}>Total</th>
                                 <th style={{padding: '10px', textAlign: 'left'}}>Status</th>
                             </tr>
                         </thead>
@@ -135,10 +167,38 @@ function BatchEditModal({ isOpen, onClose, onSave, transactions, items }) {
                                     <td style={{padding: '10px'}}>
                                         <input
                                             type="number"
+                                            min="1"
+                                            value={trx.quantity || 1}
+                                            onChange={(e) => handleFieldChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                                            style={{width: '80px'}}
+                                        />
+                                    </td>
+                                    <td style={{padding: '10px'}}>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={parseFloat(trx.unit_price || (trx.total_price / (trx.quantity || 1)) || 0).toFixed(2)}
+                                            onChange={(e) => {
+                                                const unitPrice = parseFloat(e.target.value) || 0;
+                                                const newTotal = unitPrice * (trx.quantity || 1);
+                                                handleFieldChange(index, 'unit_price', unitPrice);
+                                                handleFieldChange(index, 'total_price', newTotal);
+                                            }}
+                                            style={{width: '100px'}}
+                                        />
+                                    </td>
+                                    <td style={{padding: '10px'}}>
+                                        <input
+                                            type="number"
                                             step="0.01"
                                             value={trx.total_price || ''}
-                                            onChange={(e) => handleFieldChange(index, 'total_price', parseFloat(e.target.value) || 0)}
-                                            style={{width: '100%'}}
+                                            onChange={(e) => {
+                                                const totalPrice = parseFloat(e.target.value) || 0;
+                                                const unitPrice = totalPrice / (trx.quantity || 1);
+                                                handleFieldChange(index, 'total_price', totalPrice);
+                                                handleFieldChange(index, 'unit_price', unitPrice);
+                                            }}
+                                            style={{width: '100px', fontWeight: 'bold'}}
                                         />
                                     </td>
                                     <td style={{padding: '10px'}}>
@@ -178,22 +238,24 @@ function BatchEditModal({ isOpen, onClose, onSave, transactions, items }) {
                     </button>
                     <button 
                         onClick={handleSaveAll}
+                        disabled={saving}
                         style={{
                             padding: '12px 24px',
                             border: 'none',
                             borderRadius: '8px',
-                            cursor: 'pointer',
-                            backgroundColor: '#28a745',
+                            cursor: saving ? 'not-allowed' : 'pointer',
+                            backgroundColor: saving ? '#6c757d' : '#28a745',
                             color: 'white',
                             fontSize: '14px',
                             fontWeight: '600',
                             transition: 'all 0.2s ease',
-                            boxShadow: '0 2px 4px rgba(40, 167, 69, 0.3)'
+                            boxShadow: '0 2px 4px rgba(40, 167, 69, 0.3)',
+                            opacity: saving ? 0.7 : 1
                         }}
-                        onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
-                        onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
+                        onMouseOver={(e) => !saving && (e.target.style.backgroundColor = '#218838')}
+                        onMouseOut={(e) => !saving && (e.target.style.backgroundColor = '#28a745')}
                     >
-                        ✓ Salvar Todos ({editedTransactions.length})
+                        {saving ? '⏳ Salvando...' : `✓ Salvar Todos (${editedTransactions.length})`}
                     </button>
                 </div>
             </div>

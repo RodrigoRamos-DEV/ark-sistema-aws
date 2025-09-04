@@ -456,9 +456,16 @@ function LancamentosPage() {
         setIsPedidoModalOpen(true);
     };
     
-    const handleBatchEditSave = (savedTransaction, isEdit) => {
+    const handleBatchEditSave = async (savedTransaction, isEdit) => {
         if (isEdit) {
-            setTransactions(prev => prev.map(trx => trx.id === savedTransaction.id ? { ...trx, ...savedTransaction } : trx));
+            const token = localStorage.getItem('token');
+            try {
+                await axios.put(`${DATA_API_URL}/transactions/${savedTransaction.id}`, savedTransaction, { headers: { 'x-auth-token': token } });
+                setTransactions(prev => prev.map(trx => trx.id === savedTransaction.id ? { ...trx, ...savedTransaction } : trx));
+            } catch (err) {
+                console.error('Erro ao salvar transação:', err);
+                toast.error(`Erro ao salvar transação: ${err.response?.data?.error || err.message}`);
+            }
         }
     };
     
