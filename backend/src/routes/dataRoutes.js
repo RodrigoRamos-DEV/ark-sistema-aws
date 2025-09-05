@@ -31,6 +31,7 @@ router.post('/transactions', dataController.addTransaction);
 router.put('/transactions/:id', dataController.updateTransaction);
 router.delete('/transactions/:id', dataController.deleteTransaction);
 router.post('/transactions/batch-delete', dataController.batchDeleteTransactions);
+router.post('/transactions/batch-update-status', dataController.batchUpdateStatus);
 
 // Rota para Upload de Anexos
 router.post('/transactions/:transactionId/attach', dataController.addAttachment);

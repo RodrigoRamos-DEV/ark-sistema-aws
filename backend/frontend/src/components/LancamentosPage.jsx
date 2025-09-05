@@ -396,23 +396,26 @@ function LancamentosPage() {
             onConfirm: async () => {
                 const token = localStorage.getItem('token');
                 try {
-                    // Alterar status localmente (incluindo pedidos)
+                    // Criar endpoint para atualização em massa
+                    await axios.post(`${DATA_API_URL}/transactions/batch-update-status`, {
+                        ids: selectedTransactions,
+                        status: newStatus
+                    }, { headers: { 'x-auth-token': token } });
+                    
+                    // Atualizar estado local após sucesso no backend
                     setTransactions(prev => prev.map(trx => {
-                        // Se é um pedido selecionado, alterar todas as transações do pedido
-                        const isPedidoSelected = selectedTransactions.some(id => id.startsWith('pedido_') && trx.pedido_id === id.replace('pedido_', ''));
-                        // Se é uma transação individual selecionada
-                        const isTransactionSelected = selectedTransactions.includes(trx.id);
-                        
-                        if (isPedidoSelected || isTransactionSelected) {
+                        if (selectedTransactions.includes(trx.id)) {
                             return { ...trx, status: newStatus };
                         }
                         return trx;
                     }));
+                    
                     setSelectedTransactions([]);
                     toast.success(`Status alterado para ${selectedTransactions.length} lançamentos!`);
                     closeConfirmModal();
                 } catch (err) {
-                    setError('Erro ao alterar status em massa');
+                    console.error('Erro ao alterar status em massa:', err);
+                    toast.error(err.response?.data?.error || 'Erro ao alterar status em massa');
                     closeConfirmModal();
                 }
             }

@@ -89,7 +89,7 @@ function RelatoriosPage() {
             return (filters.employeeId === 'todos' || trx.employee_id === filters.employeeId) &&
                 (!filters.startDate || trxDate >= new Date(filters.startDate)) &&
                 (!filters.endDate || trxDate < endDatePlusOne) &&
-                (filters.status === 'todos' || trx.status === filters.status) &&
+                (filters.status === 'todos' || (trx.status && trx.status.toLowerCase() === filters.status.toLowerCase())) &&
                 (trx.type === 'gasto' || filters.product === 'todos' || trx.description === filters.product) &&
                 (trx.type === 'gasto' || filters.buyer === 'todos' || trx.category === filters.buyer) &&
                 (trx.type === 'venda' || filters.purchase === 'todos' || trx.description === filters.purchase) &&

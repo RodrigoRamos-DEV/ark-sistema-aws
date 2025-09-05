@@ -443,7 +443,7 @@ exports.getTransactions = async (req, res) => {
     if (employeeId && employeeId !== 'todos') { queryText += ` AND t.employee_id = $${paramIndex++}`; queryParams.push(employeeId); }
     if (startDate) { queryText += ` AND t.transaction_date >= $${paramIndex++}`; queryParams.push(startDate); }
     if (endDate) { queryText += ` AND t.transaction_date <= $${paramIndex++}`; queryParams.push(endDate); }
-    if (status && status !== 'todos') { queryText += ` AND t.status = $${paramIndex++}`; queryParams.push(status); }
+    if (status && status !== 'todos') { queryText += ` AND LOWER(t.status) = LOWER($${paramIndex++})`; queryParams.push(status); }
     if (product && product !== 'todos') { queryText += ` AND t.type = 'venda' AND t.description = $${paramIndex++}`; queryParams.push(product); }
     if (buyer && buyer !== 'todos') { queryText += ` AND t.type = 'venda' AND t.category = $${paramIndex++}`; queryParams.push(buyer); }
     if (purchase && purchase !== 'todos') { queryText += ` AND t.type = 'gasto' AND t.description = $${paramIndex++}`; queryParams.push(purchase); }
@@ -533,6 +533,31 @@ exports.batchDeleteTransactions = async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ error: 'Erro no servidor ao deletar lançamentos.' });
+    }
+};
+
+exports.batchUpdateStatus = async (req, res) => {
+    const { ids, status } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: 'Uma lista de IDs é necessária.' });
+    }
+    if (!status) {
+        return res.status(400).json({ error: 'Status é obrigatório.' });
+    }
+    
+    try {
+        const result = await db.query(
+            'UPDATE transactions SET status = $1 WHERE id = ANY($2) AND client_id = $3',
+            [status, ids, req.user.clientId]
+        );
+        
+        res.json({ 
+            msg: `Status de ${result.rowCount} lançamentos atualizado para "${status}" com sucesso.`,
+            updated: result.rowCount
+        });
+    } catch (err) {
+        console.error('Erro ao atualizar status em massa:', err.message);
+        res.status(500).json({ error: 'Erro no servidor ao atualizar status.' });
     }
 };
 
