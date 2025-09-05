@@ -556,7 +556,7 @@ exports.batchUpdateStatus = async (req, res) => {
             updated: result.rowCount
         });
     } catch (err) {
-        console.error('Erro ao atualizar status em massa:', err.message);
+        console.error('Erro ao atualizar status em massa:', encodeURIComponent(err.message));
         res.status(500).json({ error: 'Erro no servidor ao atualizar status.' });
     }
 };
