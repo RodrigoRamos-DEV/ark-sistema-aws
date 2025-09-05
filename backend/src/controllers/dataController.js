@@ -566,6 +566,9 @@ exports.generateReport = async (req, res) => {
     const { filteredData, summary, filters, viewType, employeeName } = req.body;
     
     try {
+        // Limitar dados para evitar sobrecarga
+        const limitedData = filteredData ? filteredData.slice(0, 2000) : [];
+        
         const clientInfo = await db.query(`SELECT company_name, cnpj_cpf, contact_phone, email, pix, full_address, website, 
                                                    inscricao_estadual, inscricao_municipal, logo_path, cor_tema,
                                                    cep, endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_uf 
@@ -580,7 +583,7 @@ exports.generateReport = async (req, res) => {
             return new Date(date.getTime() + (date.getTimezoneOffset() * 60000)).toLocaleDateString('pt-BR');
         };
 
-        filteredData.sort((a, b) => new Date(a.transaction_date) - new Date(b.transaction_date));
+        limitedData.sort((a, b) => new Date(a.transaction_date) - new Date(b.transaction_date));
 
         let title = "Relatório de Fechamento";
         let subtitle = "";
@@ -607,7 +610,7 @@ exports.generateReport = async (req, res) => {
 
         if (isCompradorEspecifico || isFornecedorEspecifico) {
             finalTableHeaders = ['Data', 'Quantidade', viewType === 'vendas' ? 'Produto' : 'Compra', 'Valor Unitário', 'Valor Total', 'Status'];
-            tableRows = filteredData.map(item => `
+            tableRows = limitedData.map(item => `
                 <tr>
                     <td>${formatDate(item.transaction_date)}</td>
                     <td>${formatQuantity(item.quantity)}</td>
@@ -622,7 +625,7 @@ exports.generateReport = async (req, res) => {
             if (isFuncionarioEspecifico) {
                 finalTableHeaders = finalTableHeaders.filter(h => h !== 'Funcionário');
             }
-            tableRows = filteredData.map(item => `
+            tableRows = limitedData.map(item => `
                 <tr>
                     <td>${formatDate(item.transaction_date)}</td>
                     ${!isFuncionarioEspecifico ? `<td>${item.employee_name || ''}</td>` : ''}
@@ -789,8 +792,13 @@ exports.generateReport = async (req, res) => {
         `;
         res.send(html);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send("<h1>Erro interno ao gerar o relatório.</h1>");
+        console.error('Erro ao gerar relatório:', err.message);
+        console.error('Stack trace:', err.stack);
+        res.status(500).json({ 
+            error: 'Erro interno ao gerar o relatório',
+            message: err.message,
+            timestamp: new Date().toISOString()
+        });
     }
 };
 
@@ -857,6 +865,9 @@ exports.generateCupom = async (req, res) => {
     const { filteredData, summary, filters, viewType, employeeName } = req.body;
     
     try {
+        // Limitar dados para evitar sobrecarga
+        const limitedData = filteredData ? filteredData.slice(0, 1000) : [];
+        
         const clientInfo = await db.query(`SELECT company_name, cnpj_cpf, contact_phone, email, pix, full_address, 
                                                    inscricao_estadual, inscricao_municipal, logo_path, cor_tema,
                                                    cep, endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_uf 
@@ -872,7 +883,7 @@ exports.generateCupom = async (req, res) => {
 
         // Agrupar por data
         const groupedByDate = {};
-        filteredData.forEach(item => {
+        limitedData.forEach(item => {
             const date = formatDate(item.transaction_date);
             if (date && date !== '') {
                 if (!groupedByDate[date]) {
@@ -903,8 +914,8 @@ exports.generateCupom = async (req, res) => {
         const cupomNumber = Date.now().toString().slice(-6);
         
         // Calcular totais
-        const totalQuantity = filteredData.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
-        const totalValue = summary.ganhos || filteredData.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+        const totalQuantity = limitedData.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
+        const totalValue = summary?.ganhos || limitedData.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
         
         const html = `
             <!DOCTYPE html>
@@ -1024,8 +1035,21 @@ exports.generateCupom = async (req, res) => {
         
         res.send(html);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send("<h1>Erro interno ao gerar o cupom.</h1>");
+        console.error('Erro ao gerar cupom:', err.message);
+        console.error('Stack trace:', err.stack);
+        console.error('Dados recebidos:', {
+            clientId,
+            filteredDataLength: filteredData?.length || 0,
+            summaryExists: !!summary,
+            filtersExists: !!filters,
+            viewType,
+            employeeName
+        });
+        res.status(500).json({ 
+            error: 'Erro interno ao gerar o cupom',
+            message: err.message,
+            timestamp: new Date().toISOString()
+        });
     }
 };
 
