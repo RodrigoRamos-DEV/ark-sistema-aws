@@ -924,31 +924,95 @@ exports.generateCupom = async (req, res) => {
                 <meta charset="UTF-8">
                 <title>Cupom Fiscal</title>
                 <style>
-                    @page { size: 80mm auto; margin: 0; }
-                    body { 
-                        font-family: 'Courier New', monospace; 
+                    @page { 
+                        size: 80mm auto; 
                         margin: 0; 
-                        padding: 2mm; 
-                        width: 76mm;
-                        font-size: 9px;
-                        line-height: 1.1;
+                        -webkit-print-color-adjust: exact;
+                        color-adjust: exact;
                     }
-                    .cupom { width: 100%; }
+                    * {
+                        -webkit-print-color-adjust: exact;
+                        color-adjust: exact;
+                        font-weight: bold !important;
+                    }
+                    body { 
+                        font-family: 'Courier New', 'Consolas', monospace; 
+                        margin: 0; 
+                        padding: 1mm; 
+                        width: 78mm;
+                        font-size: 11px;
+                        line-height: 1.3;
+                        color: #000 !important;
+                        background: #fff !important;
+                        font-weight: bold;
+                    }
+                    .cupom { 
+                        width: 100%; 
+                        color: #000 !important;
+                        background: #fff !important;
+                        font-weight: bold !important;
+                    }
                     .center { text-align: center; }
                     .right { text-align: right; }
-                    .bold { font-weight: bold; }
-                    .line { border-bottom: 1px dashed #000; margin: 2px 0; }
-                    .header { margin-bottom: 3px; font-size: 8px; }
-                    .table-header { display: flex; margin: 2px 0; font-weight: bold; font-size: 8px; }
-                    .col-data { width: 12%; }
-                    .col-qtd { width: 8%; text-align: center; }
-                    .col-desc { width: 45%; }
-                    .col-preco { width: 15%; text-align: right; }
-                    .col-subtotal { width: 20%; text-align: right; }
-                    .item-row { display: flex; margin: 1px 0; font-size: 8px; }
-                    .total-day { display: flex; margin: 1px 0; font-size: 8px; }
-                    .total-line { display: flex; justify-content: space-between; font-weight: bold; margin: 1px 0; }
-                    .footer { margin-top: 3px; font-size: 8px; }
+                    .bold { font-weight: bold !important; }
+                    .line { 
+                        border-bottom: 1px dashed #000; 
+                        margin: 2px 0; 
+                        height: 1px;
+                    }
+                    .header { 
+                        margin-bottom: 3px; 
+                        font-size: 10px; 
+                        color: #000 !important;
+                        font-weight: bold !important;
+                    }
+                    .table-header { 
+                        display: flex; 
+                        margin: 3px 0; 
+                        font-weight: bold !important; 
+                        font-size: 10px;
+                        color: #000 !important;
+                        border-bottom: 1px solid #000;
+                        padding-bottom: 1px;
+                    }
+                    .col-data { width: 12%; font-size: 9px; }
+                    .col-qtd { width: 8%; text-align: center; font-size: 9px; }
+                    .col-desc { width: 45%; font-size: 9px; }
+                    .col-preco { width: 15%; text-align: right; font-size: 9px; }
+                    .col-subtotal { width: 20%; text-align: right; font-size: 9px; }
+                    .item-row { 
+                        display: flex; 
+                        margin: 2px 0; 
+                        font-size: 9px;
+                        color: #000 !important;
+                        padding: 1px 0;
+                        font-weight: bold !important;
+                    }
+                    .total-day { 
+                        display: flex; 
+                        margin: 2px 0; 
+                        font-size: 9px;
+                        font-weight: bold !important;
+                        color: #000 !important;
+                        border-top: 1px dotted #000;
+                        padding-top: 1px;
+                    }
+                    .total-line { 
+                        display: flex; 
+                        justify-content: space-between; 
+                        font-weight: bold !important; 
+                        margin: 3px 0;
+                        font-size: 12px;
+                        color: #000 !important;
+                        border-top: 2px solid #000;
+                        padding-top: 2px;
+                    }
+                    .footer { 
+                        margin-top: 4px; 
+                        font-size: 9px;
+                        color: #000 !important;
+                        font-weight: bold !important;
+                    }
                     .no-print { display: none; }
                     @media screen {
                         .no-print { display: block; text-align: center; margin: 10px 0; }
@@ -956,7 +1020,19 @@ exports.generateCupom = async (req, res) => {
                         body { background: #f5f5f5; padding: 20px; }
                         .cupom { background: white; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
                     }
-                    @media print { .no-print { display: none; } }
+                    @media print { 
+                        .no-print { display: none !important; }
+                        body { 
+                            -webkit-print-color-adjust: exact !important;
+                            color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        * {
+                            color: #000 !important;
+                            background: transparent !important;
+                            font-weight: bold !important;
+                        }
+                    }
                 </style>
             </head>
             <body>
