@@ -257,3 +257,40 @@ h1 {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(51, 65, 85, 0.3);
 }
+
+/* Responsividade adicional para navbar com 7 abas */
+@media (max-width: 768px) {
+    .navbar-center {
+        background: var(--gradiente-primario) !important;
+        backdrop-filter: blur(10px);
+    }
+    
+    .navbar-center a:hover,
+    .navbar-center button:hover,
+    .nav-link-wrapper:hover:not(.disabled-link) {
+        transform: translateX(5px);
+    }
+    
+    .navbar-center a.active {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-left: 3px solid white !important;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1300px) {
+    .navbar-center a:hover,
+    .navbar-center button:hover,
+    .nav-link-wrapper:hover:not(.disabled-link) {
+        transform: translateY(-1px);
+    }
+}
+
+/* Dark mode navbar */
+body.dark-mode .navbar-center {
+    background: var(--gradiente-primario) !important;
+}
+
+body.dark-mode .navbar-center a,
+body.dark-mode .navbar-center button {
+    color: white !important;
+}

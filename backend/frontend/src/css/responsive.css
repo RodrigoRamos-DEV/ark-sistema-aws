@@ -39,6 +39,23 @@
 }
 
 /* === NAVBAR RESPONSIVA === */
+/* Tablet e telas médias - ajustar espaçamento */
+@media (min-width: 769px) and (max-width: 1200px) {
+  .navbar-center a,
+  .navbar-center button,
+  .nav-link-wrapper {
+    padding: 8px 12px !important;
+    font-size: 0.9em !important;
+  }
+  
+  .navbar-center svg {
+    width: 16px !important;
+    height: 16px !important;
+    margin-right: 6px !important;
+  }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .main-navbar {
     padding: 8px 15px;
@@ -58,6 +75,8 @@
     background-color: var(--cor-primaria);
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     z-index: 999;
+    max-height: 70vh;
+    overflow-y: auto;
   }
 
   .navbar-center.mobile-active {
@@ -69,19 +88,27 @@
   .navbar-center a,
   .navbar-center button,
   .nav-link-wrapper {
-    padding: 15px 20px !important;
+    padding: 12px 20px !important;
     border-radius: 0 !important;
     border: none !important;
     justify-content: flex-start !important;
     text-align: left !important;
     width: 100% !important;
     box-sizing: border-box;
+    font-size: 0.95em !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 
   .navbar-center a:hover,
   .navbar-center button:hover,
   .nav-link-wrapper:hover:not(.disabled-link) {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  .navbar-center svg {
+    width: 18px !important;
+    height: 18px !important;
+    margin-right: 8px !important;
   }
 
   .mobile-menu-icon {
@@ -91,11 +118,32 @@
     color: white;
     font-size: 1.5em;
     padding: 5px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  
+  .mobile-menu-icon:hover {
+    transform: scale(1.1);
   }
 
   .nav-button {
     padding: 8px 10px;
     font-size: 0.9em;
+  }
+}
+
+/* Telas muito pequenas */
+@media (max-width: 480px) {
+  .navbar-center a,
+  .navbar-center button,
+  .nav-link-wrapper {
+    padding: 10px 15px !important;
+    font-size: 0.9em !important;
+  }
+  
+  .navbar-center svg {
+    width: 16px !important;
+    height: 16px !important;
   }
 }
 
@@ -563,6 +611,26 @@
 
   .form-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* === NAVBAR COMPACTA PARA TELAS MENORES === */
+@media (min-width: 1025px) and (max-width: 1300px) {
+  .navbar-center {
+    gap: 5px;
+  }
+  
+  .navbar-center a,
+  .navbar-center button,
+  .nav-link-wrapper {
+    padding: 8px 10px !important;
+    font-size: 0.85em !important;
+  }
+  
+  .navbar-center svg {
+    width: 14px !important;
+    height: 14px !important;
+    margin-right: 4px !important;
   }
 }
 
