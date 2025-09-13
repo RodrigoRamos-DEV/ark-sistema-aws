@@ -10,7 +10,8 @@ const adminNotificationRoutes = require('./src/routes/admin');
 const onlineStatusRoutes = require('./src/routes/onlineStatusRoutes');
 
 // Rotas com try-catch para evitar crash
-let calendarioRoutes;
+let adminRoutes, calendarioRoutes, partnerRoutes, licenseRoutes, backupRoutes, auditRoutes, importExportRoutes, feiraRoutes, migrateRoutes, syncRoutes, fixRoutes, subscriptionRoutes, asaasRoutes;
+
 try {
     adminRoutes = require('./src/routes/adminRoutes');
 } catch (err) { console.warn('adminRoutes não carregada:', err.message); }
