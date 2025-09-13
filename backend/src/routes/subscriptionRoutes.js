@@ -270,7 +270,7 @@ router.get('/check-access/:feature', authMiddleware, async (req, res) => {
     );
     
     if (result.rows.length === 0) {
-      return res.json({ hasAccess: feature === 'feira' });
+      return res.json({ hasAccess: ['vitrine', 'feira', 'profile', 'planos'].includes(feature) });
     }
     
     const subscription = result.rows[0];
@@ -278,7 +278,7 @@ router.get('/check-access/:feature', authMiddleware, async (req, res) => {
     
     // Se status é expired, sem acesso (exceto feira, perfil, planos)
     if (subscription.status === 'expired') {
-      return res.json({ hasAccess: ['vitrine', 'profile', 'planos'].includes(feature) });
+      return res.json({ hasAccess: ['vitrine', 'feira', 'profile', 'planos'].includes(feature) });
     }
     
     // Verificar trial
@@ -287,7 +287,7 @@ router.get('/check-access/:feature', authMiddleware, async (req, res) => {
       if (now <= trialEnd) {
         return res.json({ hasAccess: true }); // Trial tem acesso a tudo
       } else {
-        return res.json({ hasAccess: feature === 'feira' }); // Após trial, só feira
+        return res.json({ hasAccess: ['vitrine', 'feira', 'profile', 'planos'].includes(feature) }); // Após trial, só feira
       }
     }
     
@@ -297,7 +297,7 @@ router.get('/check-access/:feature', authMiddleware, async (req, res) => {
     }
     
     // Default: só feira
-    res.json({ hasAccess: feature === 'feira' });
+    res.json({ hasAccess: ['vitrine', 'feira', 'profile', 'planos'].includes(feature) });
   } catch (error) {
     console.error('Erro ao verificar acesso:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
