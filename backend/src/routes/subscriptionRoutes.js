@@ -73,12 +73,17 @@ router.post('/setup', authMiddleware, async (req, res) => {
 // Obter plano atual do usuário
 router.get('/current', authMiddleware, async (req, res) => {
   try {
+    console.log('Buscando assinatura para usuário:', req.user.id);
+    
     const result = await pool.query(
       'SELECT * FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
       [req.user.id]
     );
     
+    console.log('Resultado da busca:', result.rows);
+    
     if (result.rows.length === 0) {
+      console.log('Nenhuma assinatura encontrada, criando nova');
       // Criar assinatura gratuita para novos usuários
       const trialEnd = new Date();
       trialEnd.setDate(trialEnd.getDate() + 3);
@@ -97,7 +102,17 @@ router.get('/current', authMiddleware, async (req, res) => {
     }
     
     const subscription = result.rows[0];
+    console.log('Assinatura encontrada:', subscription);
     const now = new Date();
+    
+    // Se é premium ativo, retornar como premium
+    if (subscription.plan === 'premium' && subscription.status === 'active') {
+      return res.json({
+        ...subscription,
+        status: 'active',
+        days_left: 999
+      });
+    }
     
     // Se status é expired, sempre retornar como expired (mesmo durante trial)
     if (subscription.status === 'expired') {
@@ -400,10 +415,29 @@ router.put('/admin/subscriptions/:userId', authMiddleware, async (req, res) => {
     const { userId } = req.params;
     const { plan, status, expires_at } = req.body;
     
-    await pool.query(
-      'UPDATE subscriptions SET plan = $1, status = $2, expires_at = $3, updated_at = CURRENT_TIMESTAMP WHERE user_id = $4',
-      [plan, status, expires_at, userId]
+    console.log('Atualizando assinatura:', { userId, plan, status, expires_at });
+    
+    // Verificar se já existe assinatura
+    const existingResult = await pool.query(
+      'SELECT id FROM subscriptions WHERE user_id = $1',
+      [userId]
     );
+    
+    if (existingResult.rows.length === 0) {
+      // Criar nova assinatura
+      await pool.query(
+        'INSERT INTO subscriptions (user_id, plan, status, expires_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)',
+        [userId, plan, status, expires_at]
+      );
+      console.log('Nova assinatura criada para usuário:', userId);
+    } else {
+      // Atualizar assinatura existente
+      await pool.query(
+        'UPDATE subscriptions SET plan = $1, status = $2, expires_at = $3, updated_at = CURRENT_TIMESTAMP WHERE user_id = $4',
+        [plan, status, expires_at, userId]
+      );
+      console.log('Assinatura atualizada para usuário:', userId);
+    }
     
     res.json({ success: true, message: 'Assinatura atualizada com sucesso' });
   } catch (error) {
