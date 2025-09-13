@@ -156,12 +156,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor a rodar na porta ${PORT}`);
   
-  // Inicializar sistema de notificações
-  try {
-    const notificationService = require('./src/services/notificationService');
-    notificationService.startPeriodicCheck();
-    console.log('🔔 Sistema de notificações iniciado');
-  } catch (err) {
-    console.warn('⚠️ Sistema de notificações não disponível:', err.message);
-  }
+  console.log('🚀 Servidor iniciado com sucesso!');
 });
