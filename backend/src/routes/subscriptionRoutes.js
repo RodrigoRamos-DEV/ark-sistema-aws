@@ -334,7 +334,7 @@ router.post('/test-webhook', async (req, res) => {
   }
 });
 
-module.exports = router; confirmação de pagamento (para teste)
+// Confirmação de pagamento (para teste)
 router.post('/confirm-payment', authMiddleware, async (req, res) => {
   try {
     // Atualizar assinatura do usuário para premium
