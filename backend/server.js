@@ -87,8 +87,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 // WEBHOOK SEM AUTENTICAÇÃO - DEVE VIR PRIMEIRO
-if (asaasRoutes) {
-  app.post('/api/asaas/webhook', require('./src/controllers/webhookController').handleAsaasWebhook);
+try {
+  const webhookController = require('./src/controllers/webhookController');
+  app.post('/api/asaas/webhook', webhookController.handleAsaasWebhook.bind(webhookController));
+} catch (err) {
+  console.warn('Webhook controller não carregado:', err.message);
 }
 
 // --- Definição das Rotas da API ---
