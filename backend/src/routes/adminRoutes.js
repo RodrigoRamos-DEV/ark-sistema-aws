@@ -11,6 +11,7 @@ router.post('/clients', adminController.createClient);
 router.put('/clients/:id', adminController.updateClient);
 router.delete('/clients/:id', adminController.deleteClient);
 router.put('/clients/:id/renew', adminController.renewClientLicense);
+router.put('/clients/:id/renew-subscription', adminController.renewSubscription);
 router.get('/clients/:id/token', adminController.getClientToken);
 router.get('/clients/:id/profile', adminController.getClientProfile);
 

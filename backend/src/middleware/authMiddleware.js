@@ -3,7 +3,12 @@ const jwt = require('jsonwebtoken');
 // Este é o nosso "segurança"
 module.exports = function (req, res, next) {
   // 1. Ele procura a "chave" (token) no cabeçalho da requisição
-  const token = req.header('x-auth-token');
+  let token = req.header('x-auth-token') || req.header('Authorization');
+  
+  // Remove 'Bearer ' prefix if present
+  if (token && token.startsWith('Bearer ')) {
+    token = token.slice(7);
+  }
 
   // 2. Se não houver chave, ele barra a entrada
   if (!token) {

@@ -75,7 +75,7 @@ function Toast() {
         <div
           key={toast.id}
           style={{
-            background: 'var(--cor-fundo-card)',
+            background: '#ffffff',
             border: `2px solid ${getColor(toast.type)}`,
             borderRadius: '8px',
             padding: '12px 16px',
@@ -86,7 +86,7 @@ function Toast() {
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            color: 'var(--cor-texto)'
+            color: '#333333'
           }}
         >
           <span style={{ fontSize: '16px' }}>{getIcon(toast.type)}</span>

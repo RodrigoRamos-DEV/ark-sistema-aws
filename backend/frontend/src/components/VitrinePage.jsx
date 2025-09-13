@@ -464,7 +464,7 @@ function VitrinePage() {
   };
 
   const ProductCard = ({ produto }) => (
-    <div className="card" style={{ 
+    <div className="card product-card" style={{ 
       width: '280px', 
       margin: '0', 
       padding: '0',
@@ -542,7 +542,7 @@ function VitrinePage() {
             <p style={{ margin: '4px 0', fontSize: '0.85em', color: '#888' }}>
               Por: {produto.produtor}
             </p>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+            <div className="product-actions" style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
               <a 
                 href={`https://wa.me/55${produto.whatsapp}?text=Olá! Vi seu produto ${produto.nome} na vitrine e tenho interesse.`}
                 target="_blank"
@@ -576,7 +576,7 @@ function VitrinePage() {
         )}
         
         {userType === 'produtor' && (
-          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+          <div className="product-actions" style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
             <button 
               onClick={() => editProduto(produto)}
               className="btn"
@@ -640,7 +640,7 @@ function VitrinePage() {
       </div>
       
       {/* Filtros */}
-      <div style={{ 
+      <div className="vitrine-filters" style={{ 
         display: 'flex', 
         gap: '15px', 
         marginBottom: '20px', 
@@ -736,7 +736,7 @@ function VitrinePage() {
 
       {showAddProduct && <AddProductForm />}
 
-      <div style={{
+      <div className="vitrine-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
         gap: '20px',

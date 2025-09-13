@@ -10,10 +10,13 @@ const adminNotificationRoutes = require('./src/routes/admin');
 const onlineStatusRoutes = require('./src/routes/onlineStatusRoutes');
 
 // Rotas com try-catch para evitar crash
-let adminRoutes, partnerRoutes, licenseRoutes, backupRoutes, auditRoutes, importExportRoutes, feiraRoutes, migrateRoutes, syncRoutes, fixRoutes;
+let calendarioRoutes;
 try {
     adminRoutes = require('./src/routes/adminRoutes');
 } catch (err) { console.warn('adminRoutes não carregada:', err.message); }
+try {
+    calendarioRoutes = require('./src/routes/calendarioRoutes');
+} catch (err) { console.warn('calendarioRoutes não carregada:', err.message); }
 try {
     partnerRoutes = require('./src/routes/partnerRoutes');
 } catch (err) { console.warn('partnerRoutes não carregada:', err.message); }
@@ -41,6 +44,14 @@ try {
 try {
     fixRoutes = require('./src/routes/fixRoutes');
 } catch (err) { console.warn('fixRoutes não carregada:', err.message); }
+try {
+    subscriptionRoutes = require('./src/routes/subscriptionRoutes');
+} catch (err) { console.warn('subscriptionRoutes não carregada:', err.message); }
+try {
+    asaasRoutes = require('./src/routes/asaasRoutes');
+} catch (err) { console.warn('asaasRoutes não carregada:', err.message); }
+
+
 
 // Importa middlewares
 const auth = require('./src/middleware/authMiddleware');
@@ -75,6 +86,11 @@ app.use((req, res, next) => {
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
+// WEBHOOK SEM AUTENTICAÇÃO - DEVE VIR PRIMEIRO
+if (asaasRoutes) {
+  app.post('/api/asaas/webhook', require('./src/controllers/webhookController').handleAsaasWebhook);
+}
+
 // --- Definição das Rotas da API ---
 app.use('/api/auth', authRoutes);
 app.use('/api/data', auth, checkTrialStatus, dataRoutes);
@@ -92,6 +108,11 @@ if (feiraRoutes) app.use('/api/feira', auth, checkTrialStatus, feiraRoutes);
 if (migrateRoutes) app.use('/api/migrate', migrateRoutes);
 if (syncRoutes) app.use('/api/sync', syncRoutes);
 if (fixRoutes) app.use('/api/fix', fixRoutes);
+if (subscriptionRoutes) app.use('/api/subscription', auth, subscriptionRoutes);
+if (asaasRoutes) app.use('/api/asaas', auth, asaasRoutes);
+if (calendarioRoutes) app.use('/api/calendario', auth, checkTrialStatus, calendarioRoutes);
+
+
 
 
 // --- NOVO: Servir os Ficheiros Estáticos do Frontend ---
@@ -131,4 +152,13 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor a rodar na porta ${PORT}`);
+  
+  // Inicializar sistema de notificações
+  try {
+    const notificationService = require('./src/services/notificationService');
+    notificationService.startPeriodicCheck();
+    console.log('🔔 Sistema de notificações iniciado');
+  } catch (err) {
+    console.warn('⚠️ Sistema de notificações não disponível:', err.message);
+  }
 });

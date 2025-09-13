@@ -143,8 +143,9 @@ export const notificationService = {
       });
       return response.data;
     } catch (error) {
-      // Fallback para localStorage
-      return JSON.parse(localStorage.getItem('adminNotifications') || '[]');
+      console.log('Erro ao buscar notificações:', error.message);
+      // Fallback para array vazio
+      return [];
     }
   },
 

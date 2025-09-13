@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import './css/style.css';
+import './css/responsive.css';
 import './styles/professional-enhancements.css';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
@@ -22,9 +23,13 @@ import DashboardPage from './components/DashboardPage';
 import VitrinePage from './components/VitrinePage';
 import ErrorBoundary from './components/ErrorBoundary';
 import WhatsAppSupport from './components/WhatsAppSupport';
+
 import ClientTypeRouter from './components/ClientTypeRouter';
 import EmpresaDashboard from './components/EmpresaDashboard';
 import TestPaymentModal from './components/TestPaymentModal';
+import PlanosPage from './components/PlanosPage';
+
+
 
 function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -71,6 +76,9 @@ function App() {
               <Route path="/cadastro" element={<CadastroPage />} />
               <Route path="/lancamentos" element={<LancamentosPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/planos" element={<PlanosPage />} />
+
+
             </Route>
           </Route>
           
@@ -86,6 +94,7 @@ function App() {
         </Routes>
       </Router>
       <WhatsAppSupport />
+
     </ErrorBoundary>
   );
 }

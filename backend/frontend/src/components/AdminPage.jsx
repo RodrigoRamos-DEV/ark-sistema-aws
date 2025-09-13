@@ -115,6 +115,21 @@ function AdminPage() {
             }
         });
     };
+
+    const handleRenewSubscription = (client) => {
+        setConfirmState({
+            isOpen: true,
+            message: `Deseja renovar a assinatura Premium de "${client.company_name}" por mais 30 dias?`,
+            onConfirm: async () => {
+                try {
+                    await axios.put(`${ADMIN_API_URL}/clients/${client.id}/renew-subscription`, {}, { headers: { 'x-auth-token': token } });
+                    toast.success("Assinatura renovada com sucesso!");
+                    fetchData();
+                    closeConfirmModal();
+                } catch (error) { toast.error(error.response?.data?.error || "Erro ao renovar assinatura."); closeConfirmModal(); }
+            }
+        });
+    };
     
     const handleOpenModal = (client = null) => {
         setNewToken('');
@@ -127,14 +142,13 @@ function AdminPage() {
     };
 
     const chartData = {
-        labels: ['Ativos', 'A Vencer', 'Vencidos'],
+        labels: ['Premium', 'Free'],
         datasets: [{
             data: [
-                dashboardData?.summary?.ativos || 0,
-                dashboardData?.summary?.a_vencer || 0,
-                dashboardData?.summary?.vencidos || 0
+                dashboardData?.summary?.premium || 0,
+                dashboardData?.summary?.free || 0
             ],
-            backgroundColor: [ '#16a34a', '#f59e0b', '#dc2626' ],
+            backgroundColor: [ '#16a34a', '#6b7280' ],
             borderColor: 'var(--cor-card)',
             borderWidth: 2,
         }]
@@ -259,13 +273,12 @@ function AdminPage() {
                         <>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
                                 <StatCard title="Total de Clientes" value={dashboardData.summary.total_clients} />
-                                <StatCard title="Ativos" value={dashboardData.summary.ativos} color="#16a34a" />
-                                <StatCard title="A Vencer" value={dashboardData.summary.a_vencer} color="#f59e0b" />
-                                <StatCard title="Vencidos" value={dashboardData.summary.vencidos} color="#dc2626" />
+                                <StatCard title="Premium" value={dashboardData.summary.premium} color="#16a34a" />
+                                <StatCard title="Free" value={dashboardData.summary.free} color="#6b7280" />
                             </div>
                             <div className="card grid-2-col" style={{marginTop: '20px'}}>
                                 <div>
-                                    <h3>Clientes por Status</h3>
+                                    <h3>Clientes por Plano</h3>
                                     <div style={{maxWidth: '300px', margin: 'auto'}}>
                                         <Doughnut data={chartData} options={{responsive: true}} />
                                     </div>
@@ -297,7 +310,7 @@ function AdminPage() {
                                             <th style={{ padding: '10px', textAlign: 'left' }}>Email</th>
                                             <th style={{ padding: '10px', textAlign: 'left' }}>Contato</th>
                                             <th style={{ padding: '10px', textAlign: 'left' }}>Vencimento</th>
-                                            <th style={{ padding: '10px', textAlign: 'left' }}>Status</th>
+                                            <th style={{ padding: '10px', textAlign: 'left' }}>Assinatura</th>
                                             <th style={{ padding: '10px', textAlign: 'center' }}>Online</th>
                                             <th style={{ padding: '10px', textAlign: 'center' }}>Ações</th>
                                         </tr>
@@ -336,9 +349,25 @@ function AdminPage() {
                                                 </td>
                                                 <td style={{ padding: '10px' }}>{client.license_expires_at ? new Date(client.license_expires_at).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A'}</td>
                                                 <td style={{ padding: '10px' }}>
-                                                    <span style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '0.8em', fontWeight: 'bold', ...getStatusStyles(client.license_status) }}>
-                                                        {client.license_status}
-                                                    </span>
+                                                    {client.subscription_plan ? (
+                                                        <div>
+                                                            <span style={{ 
+                                                                padding: '2px 6px', 
+                                                                borderRadius: '8px', 
+                                                                fontSize: '0.7em', 
+                                                                fontWeight: 'bold',
+                                                                backgroundColor: client.subscription_plan === 'premium' ? '#16a34a' : '#6b7280',
+                                                                color: 'white'
+                                                            }}>
+                                                                {client.subscription_plan.toUpperCase()}
+                                                            </span>
+                                                            <div style={{ fontSize: '0.7em', color: '#666', marginTop: '2px' }}>
+                                                                {client.subscription_status?.toUpperCase()}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span style={{ fontSize: '0.8em', color: '#999' }}>Sem assinatura</span>
+                                                    )}
                                                 </td>
                                                 <td style={{ padding: '10px', textAlign: 'center' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
@@ -365,8 +394,9 @@ function AdminPage() {
                                                             🔑
                                                         </button>
                                                     )}
-                                                    {(client.license_status === 'Vencido' || client.license_status === 'A Vencer') && (
-                                                        <button onClick={() => handleRenewLicense(client)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em', marginRight: '10px' }} title="Marcar como Pago e Renovar Licença">💰</button>
+
+                                                    {client.email && (client.subscription_status === 'expired' || !client.subscription_plan) && (
+                                                        <button onClick={() => handleRenewSubscription(client)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em', marginRight: '10px' }} title="Renovar Assinatura Premium">🔄</button>
                                                     )}
                                                     <button onClick={() => handleOpenModal(client)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em', marginRight: '10px' }} title="Editar">✏️</button>
                                                     <button onClick={() => handleDeleteClient(client)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }} title="Excluir">🗑️</button>

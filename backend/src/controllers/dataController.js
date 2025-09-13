@@ -667,35 +667,40 @@ exports.generateReport = async (req, res) => {
                 <meta charset="UTF-8">
                 <title>${title}</title>
                 <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; color: #333; }
+                    @page { margin: 0.5in; }
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 10px; color: #333; font-size: 10px; line-height: 1.2; }
                     .document { max-width: 800px; margin: 0 auto; background: white; }
-                    .header { border-bottom: 3px solid ${corTema}; padding-bottom: 20px; margin-bottom: 30px; }
-                    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+                    .header { border-bottom: 2px solid ${corTema}; padding-bottom: 10px; margin-bottom: 12px; }
+                    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
                     .company-info { flex: 1; }
-                    .company-name { font-size: 24px; font-weight: bold; color: ${corTema}; margin: 0; }
-                    .company-details { margin: 5px 0; color: #666; }
-                    .logo { max-width: 120px; max-height: 80px; }
+                    .company-name { font-size: 16px; font-weight: bold; color: ${corTema}; margin: 0; line-height: 1.1; }
+                    .company-details { margin: 2px 0; color: #666; font-size: 9px; }
+                    .logo { max-width: 80px; max-height: 50px; }
                     .report-info { text-align: right; }
-                    .report-title { font-size: 20px; font-weight: bold; color: ${corTema}; margin: 0; }
-                    .report-number { color: #666; margin: 5px 0; }
-                    .client-info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
-                    .client-info h3 { margin: 0 0 10px 0; color: ${corTema}; }
-                    .period-info { background: #e3f2fd; padding: 10px 15px; border-radius: 5px; margin: 20px 0; text-align: center; }
-                    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                    th { background: ${corTema}; color: white; padding: 12px 8px; text-align: left; font-weight: bold; }
-                    td { padding: 10px 8px; border-bottom: 1px solid #ddd; }
+                    .report-title { font-size: 14px; font-weight: bold; color: ${corTema}; margin: 0; }
+                    .period-emission { display: flex; justify-content: space-between; align-items: center; background: #e3f2fd; padding: 6px 10px; border-radius: 3px; margin: 10px 0; font-size: 9px; }
+                    .client-info { background: #f8f9fa; padding: 8px; border-radius: 3px; margin: 10px 0; }
+                    .client-info h3 { margin: 0 0 5px 0; color: ${corTema}; font-size: 11px; }
+                    table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9px; }
+                    th { background: ${corTema}; color: white; padding: 6px 4px; text-align: left; font-weight: bold; font-size: 9px; }
+                    td { padding: 4px 4px; border-bottom: 1px solid #ddd; font-size: 9px; }
                     tr:nth-child(even) { background: #f8f9fa; }
                     .amount { text-align: right; font-weight: bold; }
                     .amount.positive { color: #28a745; }
                     .amount.negative { color: #dc3545; }
-                    .summary { background: #f8f9fa; border: 2px solid ${corTema}; border-radius: 5px; padding: 20px; margin: 30px 0; }
-                    .summary h3 { color: ${corTema}; margin: 0 0 15px 0; text-align: center; }
-                    .summary-row { display: flex; justify-content: space-between; margin: 8px 0; padding: 5px 0; }
-                    .summary-total { border-top: 2px solid ${corTema}; padding-top: 10px; margin-top: 15px; font-size: 18px; font-weight: bold; }
-                    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px; }
-                    .no-print { margin: 20px 0; text-align: center; }
-                    .print-btn { background: ${corTema}; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-                    @media print { .no-print { display: none; } }
+                    .summary { background: #f8f9fa; border: 2px solid ${corTema}; border-radius: 3px; padding: 10px; margin: 12px 0; }
+                    .summary h3 { color: ${corTema}; margin: 0 0 8px 0; text-align: center; font-size: 11px; }
+                    .summary-row { display: flex; justify-content: space-between; margin: 4px 0; padding: 2px 0; font-size: 10px; }
+                    .summary-total { border-top: 2px solid ${corTema}; padding-top: 6px; margin-top: 8px; font-size: 12px; font-weight: bold; }
+                    .footer { margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 9px; }
+                    .no-print { margin: 10px 0; text-align: center; }
+                    .print-btn { background: ${corTema}; color: white; padding: 6px 12px; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; }
+                    @media print { 
+                        .no-print { display: none; }
+                        body { padding: 0; }
+                        .footer { page-break-inside: avoid; }
+                        .summary { page-break-inside: avoid; }
+                    }
                 </style>
             </head>
             <body>
@@ -711,22 +716,21 @@ exports.generateReport = async (req, res) => {
                                 ${profile.email ? `<div class="company-details">Email: ${profile.email}</div>` : ''}
                                 ${profile.pix ? `<div class="company-details">PIX: ${profile.pix}</div>` : ''}
                             </div>
-                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
                                 ${profile.logo_path ? `<img src="${logoUrl}" alt="Logo" class="logo">` : ''}
-                                ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 60px; height: 60px;">` : ''}
+                                ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 40px; height: 40px;">` : ''}
                             </div>
                         </div>
                         <div class="report-info">
                             <div class="report-title">${title}</div>
-                            <div class="report-number">Nº ${reportNumber}</div>
-                            <div class="report-number">Emitido em: ${currentDate}</div>
                         </div>
                     </div>
 
                     ${subtitle ? `<div class="client-info"><h3>${viewType === 'vendas' ? 'Cliente' : 'Fornecedor'}</h3>${subtitle.replace(/<[^>]*>/g, '')}</div>` : ''}
                     
-                    <div class="period-info">
-                        <strong>Período de Referência:</strong> ${formatDate(filters.startDate)} a ${formatDate(filters.endDate)}
+                    <div class="period-emission">
+                        <div><strong>Período de Referência:</strong> ${formatDate(filters.startDate)} a ${formatDate(filters.endDate)}</div>
+                        <div><strong>Emitido em:</strong> ${currentDate}</div>
                     </div>
 
                     <div class="no-print">
@@ -758,28 +762,12 @@ exports.generateReport = async (req, res) => {
                         </div>
                     </div>
 
-                    ${profile.pix || profile.email || profile.website ? `
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
-                        <h4 style="color: #2c5aa0; margin: 0 0 10px 0;">Informações de Contato</h4>
-                        ${profile.pix ? `<p style="margin: 5px 0;"><strong>PIX:</strong> ${profile.pix}</p>` : ''}
-                        ${profile.email ? `<p style="margin: 5px 0;"><strong>Email:</strong> ${profile.email}</p>` : ''}
-                        ${profile.website ? `<p style="margin: 5px 0;"><strong>Site:</strong> ${profile.website}</p>` : ''}
-                    </div>
-                    ` : ''}
+
                     
                     <div class="footer">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <div>
-                                <p style="margin: 0; font-size: 12px;">Documento gerado automaticamente pelo sistema</p>
-                                <p style="margin: 0; font-size: 12px;">Data de emissão: ${currentDate}</p>
-
-                            </div>
-                            ${qrCodeDataUrl ? `<div style="text-align: right;"><img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;"></div>` : ''}
-                        </div>
-                        <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
-                        <p style="margin: 0; font-size: 11px; text-align: center;">Este relatório contém informações confidenciais e destina-se exclusivamente ao uso do destinatário.</p>
+                        <p style="margin: 0; font-size: 8px; text-align: center;">Documento gerado automaticamente pelo sistema</p>
                         ${profile.inscricao_estadual || profile.inscricao_municipal ? `
-                        <p style="margin: 5px 0 0 0; font-size: 10px; text-align: center; color: #666;">
+                        <p style="margin: 2px 0 0 0; font-size: 7px; text-align: center; color: #666;">
                             ${profile.inscricao_estadual ? `IE: ${profile.inscricao_estadual}` : ''}
                             ${profile.inscricao_estadual && profile.inscricao_municipal ? ' | ' : ''}
                             ${profile.inscricao_municipal ? `IM: ${profile.inscricao_municipal}` : ''}
@@ -2113,6 +2101,14 @@ exports.updateProfile = (req, res) => {
             const queryText = `UPDATE clients SET ${fieldsToUpdate.join(', ')} WHERE id = $${queryIndex} RETURNING *`;
             
             const result = await db.query(queryText, values);
+
+            // Atualizar CPF na tabela users se fornecido
+            if (cnpjCpf) {
+                const cpfLimpo = cnpjCpf.replace(/\D/g, '');
+                if (cpfLimpo.length === 11) { // É um CPF
+                    await db.query('UPDATE users SET cpf = $1 WHERE id = $2', [cpfLimpo, req.user.id]);
+                }
+            }
 
             const updatedProfile = result.rows[0];
             if (updatedProfile.logo_path) {

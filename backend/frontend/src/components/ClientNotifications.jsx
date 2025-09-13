@@ -12,7 +12,7 @@ const ClientNotifications = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    fetchNotifications();
+    // fetchNotifications(); // Desabilitado temporariamente
     loadDismissedNotifications();
   }, []);
 
@@ -22,6 +22,7 @@ const ClientNotifications = () => {
       setNotifications(notifications);
     } catch (error) {
       console.error('Erro ao buscar notificações:', error);
+      setNotifications([]); // Fallback para array vazio
     }
   };
 

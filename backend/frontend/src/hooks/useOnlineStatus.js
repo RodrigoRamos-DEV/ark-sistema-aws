@@ -14,6 +14,10 @@ const useOnlineStatus = () => {
                     headers: { 'x-auth-token': token }
                 });
             } catch (error) {
+                // Silenciar erros em desenvolvimento
+                if (process.env.NODE_ENV === 'development') {
+                    return;
+                }
                 console.error('Erro ao enviar heartbeat:', error);
             }
         };

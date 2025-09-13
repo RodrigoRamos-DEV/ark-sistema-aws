@@ -25,9 +25,15 @@ const getAllClients = async (req, res) => {
                     WHEN c.license_expires_at - CURRENT_DATE <= 5 THEN 'A Vencer'
                     ELSE 'Ativo'
                 END AS license_status,
-                (SELECT u.email FROM users u WHERE u.client_id = c.id LIMIT 1) as email
+                u.email,
+                s.plan as subscription_plan,
+                s.status as subscription_status,
+                s.trial_ends_at,
+                s.expires_at as subscription_expires_at
             FROM clients c
             LEFT JOIN vendedores v ON c.vendedor_id = v.id
+            LEFT JOIN users u ON u.client_id = c.id
+            LEFT JOIN subscriptions s ON s.user_id = u.id::text
             ORDER BY c.company_name;
         `;
         const result = await db.query(query);
@@ -101,7 +107,9 @@ const updateClient = async (req, res) => {
         endereco_bairro, endereco_cidade, endereco_uf, endereco_cep,
         regime_tributario, licenseStatus, licenseExpiresAt, vendedorId, clientType
     } = req.body;
+    
     try {
+        // Atualizar cliente
         const result = await db.query(
             `UPDATE clients SET 
                 company_name = $1, razao_social = $2, cnpj = $3, inscricao_estadual = $4, 
@@ -117,9 +125,25 @@ const updateClient = async (req, res) => {
                 regime_tributario, licenseStatus, licenseExpiresAt, vendedorId || null, clientType || 'produtor', id
             ]
         );
+        
         if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Cliente não encontrado.' });
         }
+        
+        // Se a data de vencimento foi alterada para uma data passada, expirar assinatura
+        if (licenseExpiresAt && new Date(licenseExpiresAt) < new Date()) {
+            await db.query(
+                `UPDATE subscriptions SET 
+                    plan = 'free', 
+                    status = 'expired', 
+                    updated_at = CURRENT_TIMESTAMP 
+                WHERE user_id IN (
+                    SELECT u.id::text FROM users u WHERE u.client_id = $1
+                )`,
+                [id]
+            );
+        }
+        
         res.json(result.rows[0]);
     } catch (err) {
         console.error(err.message);
@@ -158,11 +182,12 @@ const getDashboardStats = async (req, res) => {
     try {
         const statusQuery = `
             SELECT 
-                COUNT(*) AS total_clients,
-                COUNT(*) FILTER (WHERE license_expires_at >= CURRENT_DATE AND license_expires_at - CURRENT_DATE > 5) AS ativos,
-                COUNT(*) FILTER (WHERE license_expires_at >= CURRENT_DATE AND license_expires_at - CURRENT_DATE <= 5) AS a_vencer,
-                COUNT(*) FILTER (WHERE license_expires_at < CURRENT_DATE) AS vencidos
-            FROM clients;
+                COUNT(DISTINCT c.id) AS total_clients,
+                COUNT(*) FILTER (WHERE s.plan = 'premium' AND s.status = 'active') AS premium,
+                COUNT(*) FILTER (WHERE s.plan = 'free' OR s.plan IS NULL) AS free
+            FROM clients c
+            LEFT JOIN users u ON u.client_id = c.id
+            LEFT JOIN subscriptions s ON s.user_id = u.id::text;
         `;
         const renewalsQuery = `
             SELECT id, company_name, license_expires_at
@@ -252,6 +277,49 @@ const getClientProfile = async (req, res) => {
     }
 };
 
+const renewSubscription = async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Buscar user_id do cliente
+        const userResult = await db.query('SELECT id FROM users WHERE client_id = $1', [id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Usuário não encontrado para este cliente.' });
+        }
+        
+        const userId = userResult.rows[0].id;
+        const newExpiresAt = new Date();
+        newExpiresAt.setDate(newExpiresAt.getDate() + 30);
+        
+        // Converter userId para string (subscriptions usa VARCHAR)
+        const userIdStr = userId.toString();
+        
+        // Atualizar assinatura (ou criar se não existir)
+        const updateResult = await db.query(
+            'UPDATE subscriptions SET plan = $1, status = $2, expires_at = $3, updated_at = CURRENT_TIMESTAMP WHERE user_id = $4',
+            ['premium', 'active', newExpiresAt, userIdStr]
+        );
+        
+        // Se não atualizou nenhuma linha, criar nova assinatura
+        if (updateResult.rowCount === 0) {
+            await db.query(
+                'INSERT INTO subscriptions (user_id, plan, status, expires_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)',
+                [userIdStr, 'premium', 'active', newExpiresAt]
+            );
+        }
+        
+        // Também atualizar a data de vencimento da licença do cliente
+        await db.query(
+            'UPDATE clients SET license_expires_at = $1, license_status = $2 WHERE id = $3',
+            [newExpiresAt, 'Ativo', id]
+        );
+        
+        res.json({ msg: 'Assinatura e licença renovadas com sucesso por 30 dias!' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Erro no servidor ao renovar assinatura.' });
+    }
+};
+
 module.exports = {
     ensureAdmin,
     getAllClients,
@@ -262,5 +330,6 @@ module.exports = {
     getDashboardStats,
     saveReportTemplate,
     getClientToken,
-    getClientProfile
+    getClientProfile,
+    renewSubscription
 };

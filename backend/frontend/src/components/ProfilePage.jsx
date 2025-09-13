@@ -283,14 +283,31 @@ function ProfilePage() {
                             />
                         </div>
                         <div className="input-group">
-                            <label>CNPJ / CPF</label>
+                            <label>CNPJ / CPF *</label>
                             <input
                                 type="text"
                                 name="cnpj_cpf"
                                 value={profileData.cnpj_cpf || ''}
                                 onChange={handleInputChange}
                                 placeholder="00.000.000/0000-00"
+                                required
+                                style={{
+                                    borderColor: !profileData.cnpj_cpf ? '#dc3545' : 'var(--cor-borda)'
+                                }}
                             />
+                            {!profileData.cnpj_cpf && (
+                                <small style={{
+                                    color: '#dc3545', 
+                                    fontSize: '12px',
+                                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    display: 'inline-block',
+                                    marginTop: '4px'
+                                }}>
+                                    CPF é obrigatório para assinatura premium
+                                </small>
+                            )}
                         </div>
                     </div>
                 </div>
