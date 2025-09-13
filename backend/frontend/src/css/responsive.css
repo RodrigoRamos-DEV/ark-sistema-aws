@@ -39,19 +39,66 @@
 }
 
 /* === NAVBAR RESPONSIVA === */
-/* Tablet e telas médias - ajustar espaçamento */
-@media (min-width: 769px) and (max-width: 1200px) {
+/* iPad Portrait e Landscape */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .main-navbar {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+  
+  .navbar-left {
+    flex: 0 0 auto !important;
+  }
+  
+  .navbar-center {
+    gap: 0px !important;
+    flex: 1 !important;
+  }
+  
+  .navbar-right {
+    flex: 0 0 auto !important;
+    gap: 6px !important;
+    min-width: 100px !important;
+  }
+  
   .navbar-center a,
   .navbar-center button,
   .nav-link-wrapper {
-    padding: 8px 12px !important;
-    font-size: 0.9em !important;
+    padding: 6px 8px !important;
+    font-size: 0.75em !important;
+    white-space: nowrap !important;
+  }
+  
+  .navbar-center svg {
+    width: 14px !important;
+    height: 14px !important;
+    margin-right: 3px !important;
+  }
+  
+  .nav-button {
+    padding: 6px 8px !important;
+    font-size: 0.75em !important;
+    white-space: nowrap !important;
+  }
+  
+  .mobile-menu-icon {
+    display: none !important;
+  }
+}
+
+/* Tablet grande e desktop médio */
+@media (min-width: 1025px) and (max-width: 1200px) {
+  .navbar-center a,
+  .navbar-center button,
+  .nav-link-wrapper {
+    padding: 8px 10px !important;
+    font-size: 0.85em !important;
   }
   
   .navbar-center svg {
     width: 16px !important;
     height: 16px !important;
-    margin-right: 6px !important;
+    margin-right: 4px !important;
   }
 }
 

@@ -129,8 +129,6 @@ function MainLayout({ theme, toggleTheme, isAdmin = false }) {
                 )}
 
                 <div className="navbar-right" style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-                    {!isAdmin && <GlobalSearch />}
-
                     <div className="tooltip">
                         <button onClick={toggleTheme} className="nav-button theme-toggle">
                             {theme === 'light' ? (

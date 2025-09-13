@@ -258,31 +258,318 @@ h1 {
     border: 1px solid rgba(51, 65, 85, 0.3);
 }
 
-/* Responsividade adicional para navbar com 7 abas */
-@media (max-width: 768px) {
-    .navbar-center {
-        background: var(--gradiente-primario) !important;
-        backdrop-filter: blur(10px);
+/* Espaçamento geral da navbar */
+.navbar-center {
+    gap: 0px !important;
+}
+
+/* Garantir que navbar-right seja sempre visível */
+.main-navbar {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+.navbar-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+    min-width: 80px !important;
+}
+
+.nav-button {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Correção universal para botões da navbar */
+@media screen {
+    .navbar-right .nav-button,
+    .navbar-right .theme-toggle,
+    .navbar-right .mobile-menu-icon {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        flex-shrink: 0 !important;
     }
     
-    .navbar-center a:hover,
-    .navbar-center button:hover,
-    .nav-link-wrapper:hover:not(.disabled-link) {
-        transform: translateX(5px);
-    }
-    
-    .navbar-center a.active {
-        background: rgba(255, 255, 255, 0.2) !important;
-        border-left: 3px solid white !important;
+    .nav-button.logout {
+        background-color: rgba(220, 38, 38, 0.8) !important;
+        color: white !important;
+        border: none !important;
+        min-width: 40px !important;
     }
 }
 
-@media (min-width: 769px) and (max-width: 1300px) {
+/* Força exibição do botão sair em todas as resoluções */
+.navbar-right {
+    position: relative !important;
+    z-index: 1001 !important;
+}
+
+.nav-button.logout {
+    position: relative !important;
+    z-index: 1002 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Menu Hambúrguer - Ícone */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.mobile-menu-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Menu Mobile - Container */
+.mobile-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--gradiente-primario);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--sombra-modal);
+    z-index: 1000;
+}
+
+.mobile-menu.active {
+    display: block;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mobile-menu .nav-item {
+    display: block;
+    width: 100%;
+    padding: 12px 20px;
+    color: white;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+}
+
+.mobile-menu .nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: translateX(5px);
+}
+
+.mobile-menu .nav-item.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-left: 3px solid white;
+}
+
+/* Responsividade - Breakpoints para menu hambúrguer */
+@media (max-width: 950px) {
+    .navbar-center {
+        display: none;
+    }
+    
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
+    /* Garantir que navbar-right seja sempre visível */
+    .navbar-right {
+        display: flex !important;
+        gap: 4px !important;
+    }
+    
+    .navbar-right .nav-button {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-navbar {
+        padding: 8px 16px;
+    }
+}
+
+@media (max-width: 576px) {
+    .mobile-menu .nav-item {
+        padding: 16px 20px;
+        font-size: 1.1rem;
+    }
+}
+
+/* Fallback para telas muito pequenas */
+@media (max-width: 480px) {
+    .main-navbar {
+        padding: 6px 12px;
+    }
+    
+    .navbar-right .nav-button {
+        padding: 6px 8px;
+        font-size: 0.9rem;
+    }
+} !important;
+    }
+}
+
+/* iPad e tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .navbar-center {
+        gap: 0px !important;
+    }
+    
+    .navbar-center a,
+    .navbar-center button,
+    .nav-link-wrapper {
+        padding: 6px 8px !important;
+        font-size: 0.8em !important;
+        border-radius: 4px !important;
+    }
+    
+    .navbar-center svg {
+        width: 14px !important;
+        height: 14px !important;
+        margin-right: 3px !important;
+    }
+    
     .navbar-center a:hover,
     .navbar-center button:hover,
     .nav-link-wrapper:hover:not(.disabled-link) {
         transform: translateY(-1px);
     }
+}
+
+/* Desktop médio */
+@media (min-width: 1025px) and (max-width: 1300px) {
+    .navbar-center {
+        gap: 0px !important;
+    }
+    
+    .navbar-center a,
+    .navbar-center button,
+    .nav-link-wrapper {
+        padding: 8px 10px !important;
+        font-size: 0.85em !important;
+    }
+    
+    .navbar-center svg {
+        width: 16px !important;
+        height: 16px !important;
+        margin-right: 4px !important;
+    }
+    
+    .navbar-right {
+        gap: 8px !important;
+    }
+    
+    .nav-button {
+        padding: 6px 10px !important;
+        font-size: 0.85em !important;
+    }
+}
+
+/* Responsividade geral da navbar-right */
+.navbar-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-shrink: 0 !important;
+}
+
+/* Tablets - ajustes específicos */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .main-navbar {
+        padding: 8px 15px !important;
+    }
+    
+    .navbar-right {
+        gap: 6px !important;
+        min-width: auto !important;
+    }
+    
+    .nav-button {
+        padding: 6px 8px !important;
+        font-size: 0.8em !important;
+        white-space: nowrap !important;
+    }
+    
+    .nav-button.logout {
+        background-color: rgba(220, 38, 38, 0.8) !important;
+        min-width: 50px !important;
+    }
+    
+    .theme-toggle {
+        padding: 6px !important;
+    }
+    
+    .mobile-menu-icon {
+        display: none !important;
+    }
+}
+
+/* Mobile - garantir que botões apareçam */
+@media (max-width: 768px) {
+    .navbar-right {
+        gap: 8px !important;
+    }
+    
+    .nav-button:not(.mobile-menu-icon) {
+        padding: 6px 8px !important;
+        font-size: 0.8em !important;
+    }
+    
+    .mobile-menu-icon {
+        display: block !important;
+        padding: 8px !important;
+    }
+}
+
+/* Telas muito pequenas */
+@media (max-width: 480px) {
+    .navbar-right {
+        gap: 4px !important;
+    }
+    
+    .nav-button:not(.mobile-menu-icon) {
+        padding: 4px 6px !important;
+        font-size: 0.75em !important;
+    }
+    
+    .nav-button.logout {
+        min-width: 35px !important;
+    }
+}
+
+/* Dark mode navbar */
+body.dark-mode .navbar-center {
+    background: var(--gradiente-primario) !important;
+}
+
+body.dark-mode .navbar-center a,
+body.dark-mode .navbar-center button {
+    color: white !important;
 }
 
 /* Dark mode navbar */

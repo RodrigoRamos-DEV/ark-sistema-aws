@@ -96,8 +96,8 @@ body {
 }
     
 .navbar-left, .navbar-right { flex: 1; display: flex; }
-.navbar-right { justify-content: flex-end; align-items: center; }
-.navbar-center { display: flex; justify-content: center; gap: 15px; }
+.navbar-right { justify-content: flex-end; align-items: center; gap: 10px; flex-shrink: 0; min-width: 120px; }
+.navbar-center { display: flex; justify-content: center; gap: 0px; }
 
 .navbar-logo {
     height: 45px;
