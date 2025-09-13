@@ -105,9 +105,9 @@ function MainLayout({ theme, toggleTheme, isAdmin = false }) {
                         <ProtectedNavLink to="/dashboard" feature="dashboard" hasAccess={hasAccess('dashboard')} onClick={closeMobileMenu}>
                             <Icons.Dashboard /> Dashboard
                         </ProtectedNavLink>
-                        <ProtectedNavLink to="/vitrine" feature="vitrine" hasAccess={hasAccess('vitrine')} onClick={closeMobileMenu}>
+                        <NavLink to="/vitrine" className={({ isActive }) => (isActive ? 'active' : '')} onClick={closeMobileMenu}>
                             <Icons.Store /> Feira
-                        </ProtectedNavLink>
+                        </NavLink>
                         <ProtectedNavLink to="/lancamentos" feature="lancamentos" hasAccess={hasAccess('lancamentos')} onClick={closeMobileMenu}>
                             <Icons.FileText /> Lançamentos
                         </ProtectedNavLink>
