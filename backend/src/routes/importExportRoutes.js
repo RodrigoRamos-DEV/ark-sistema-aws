@@ -129,13 +129,19 @@ router.post('/import', auth, upload.single('file'), async (req, res) => {
       const row = data[i];
       
       try {
-        // Validar campos obrigatórios
-        if (!row['Data'] || !row['Funcionário'] || !row['Tipo'] || !row['Produto/Compra'] || !row['Quantidade'] || !row['Valor Unitário']) {
-          errors.push(`Linha ${i + 2}: Campos obrigatórios em falta`);
+        // Validar campos obrigatórios (incluindo campos vazios ou só com espaços)
+        const requiredFields = ['Data', 'Funcionário', 'Tipo', 'Produto/Compra', 'Quantidade', 'Valor Unitário'];
+        const missingFields = requiredFields.filter(field => {
+          const value = row[field];
+          return !value || value.toString().trim() === '';
+        });
+        
+        if (missingFields.length > 0) {
+          errors.push(`Linha ${i + 2}: Campos obrigatórios em falta ou vazios: ${missingFields.join(', ')}`);
           continue;
         }
         
-        // Processar data
+        // Processar data com múltiplos formatos
         let transactionDate;
         if (typeof row['Data'] === 'number') {
           // Data do Excel (número serial)
@@ -143,48 +149,78 @@ router.post('/import', auth, upload.single('file'), async (req, res) => {
           transactionDate = excelDate.toISOString().split('T')[0];
         } else {
           // Data como string
-          const dateStr = row['Data'].toString();
+          const dateStr = row['Data'].toString().trim();
           if (dateStr.includes('/')) {
-            const [day, month, year] = dateStr.split('/');
-            transactionDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-          } else {
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+              let [day, month, year] = parts;
+              // Se ano tem 2 dígitos, assumir 20XX
+              if (year.length === 2) year = '20' + year;
+              transactionDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            } else {
+              throw new Error(`Formato de data inválido: ${dateStr}`);
+            }
+          } else if (dateStr.includes('-')) {
+            // Já no formato YYYY-MM-DD
             transactionDate = dateStr;
+          } else {
+            throw new Error(`Formato de data não reconhecido: ${dateStr}`);
           }
         }
         
-        // Validar tipo
-        const type = row['Tipo'].toLowerCase();
-        if (!['venda', 'gasto'].includes(type)) {
-          errors.push(`Linha ${i + 2}: Tipo deve ser 'venda' ou 'gasto'`);
+        // Validar e normalizar tipo
+        const typeRaw = row['Tipo'].toString().toLowerCase().trim();
+        let type;
+        if (typeRaw === 'venda' || typeRaw === 'vendas') {
+          type = 'venda';
+        } else if (typeRaw === 'gasto' || typeRaw === 'gastos' || typeRaw === 'compra' || typeRaw === 'compras') {
+          type = 'gasto';
+        } else {
+          errors.push(`Linha ${i + 2}: Tipo deve ser 'venda' ou 'gasto', recebido: '${row['Tipo']}'`);
           continue;
         }
         
-        // Encontrar ou criar funcionário
-        const employeeId = await findOrCreateEmployee(db, req.user.clientId, row['Funcionário']);
+        // Normalizar e encontrar funcionário
+        const employeeName = row['Funcionário'].toString().trim();
+        const employeeId = await findOrCreateEmployee(db, req.user.clientId, employeeName);
         
-        // Encontrar ou criar produto/compra
+        // Normalizar e encontrar produto/compra
+        const productName = row['Produto/Compra'].toString().trim();
         const productType = type === 'venda' ? 'produto' : 'compra';
-        await findOrCreateItem(db, req.user.clientId, row['Produto/Compra'], productType);
+        await findOrCreateItem(db, req.user.clientId, productName, productType);
         
-        // Encontrar ou criar cliente/fornecedor
+        // Normalizar e encontrar cliente/fornecedor
         let categoryName = null;
         if (row['Cliente/Fornecedor']) {
+          categoryName = row['Cliente/Fornecedor'].toString().trim();
           const categoryType = type === 'venda' ? 'comprador' : 'fornecedor';
-          await findOrCreateItem(db, req.user.clientId, row['Cliente/Fornecedor'], categoryType);
-          categoryName = row['Cliente/Fornecedor'];
+          await findOrCreateItem(db, req.user.clientId, categoryName, categoryType);
         }
         
-        // Processar valores numéricos
-        const quantity = parseFloat(row['Quantidade']) || 0;
-        const unitPrice = parseFloat(row['Valor Unitário']) || 0;
-        const totalPrice = quantity * unitPrice;
-        const status = row['Status'] || 'A Pagar';
+        // Normalizar status
+        const normalizedStatus = row['Status'] ? row['Status'].toString().trim() : 'A Pagar';
+        
+        // Processar valores numéricos com tratamento robusto
+        const quantityRaw = row['Quantidade'].toString().trim().replace(',', '.');
+        const unitPriceRaw = row['Valor Unitário'].toString().trim().replace(',', '.');
+        
+        const quantity = parseFloat(quantityRaw) || 0;
+        const unitPrice = parseFloat(unitPriceRaw) || 0;
+        
+        if (quantity <= 0) {
+          throw new Error(`Quantidade deve ser maior que zero: ${quantityRaw}`);
+        }
+        if (unitPrice < 0) {
+          throw new Error(`Valor unitário não pode ser negativo: ${unitPriceRaw}`);
+        }
+        
+        const totalPrice = Math.round((quantity * unitPrice) * 100) / 100; // Arredondar para 2 casas decimais
         
         // Inserir transação
         await db.query(`
           INSERT INTO transactions (client_id, employee_id, type, transaction_date, description, category, quantity, unit_price, total_price, status)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        `, [req.user.clientId, employeeId, type, transactionDate, row['Produto/Compra'], categoryName, quantity, unitPrice, totalPrice, status]);
+        `, [req.user.clientId, employeeId, type, transactionDate, productName, categoryName, quantity, unitPrice, totalPrice, normalizedStatus]);
         
         imported++;
       } catch (rowError) {
