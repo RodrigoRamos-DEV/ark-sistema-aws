@@ -17,35 +17,16 @@ exports.updateOnlineStatus = async (req, res) => {
             return res.json({ msg: 'Status atualizado (admin)' });
         }
 
-        // Criar tabela se não existir (sem foreign key para evitar problemas)
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS user_online_status (
-                client_id UUID PRIMARY KEY,
-                last_activity TIMESTAMP DEFAULT NOW(),
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            )
-        `);
-
-        // Verificar se o cliente existe antes de inserir
-        const clientExists = await db.query('SELECT id FROM clients WHERE id = $1', [userId]);
-        
-        if (clientExists.rows.length === 0) {
-            console.log('Cliente não encontrado na tabela clients:', userId);
-            return res.json({ msg: 'Status atualizado (cliente não encontrado)' });
-        }
-
-        // Inserir ou atualizar status
+        // Inserir ou atualizar status na tabela online_status
         try {
             await db.query(`
-                INSERT INTO user_online_status (client_id, last_activity, updated_at) 
-                VALUES ($1, NOW(), NOW())
-                ON CONFLICT (client_id) 
-                DO UPDATE SET last_activity = NOW(), updated_at = NOW()
+                INSERT INTO online_status (user_id, is_online, last_seen, updated_at) 
+                VALUES ($1, true, NOW(), NOW())
+                ON CONFLICT (user_id) 
+                DO UPDATE SET is_online = true, last_seen = NOW(), updated_at = NOW()
             `, [userId]);
         } catch (dbError) {
             console.error('Erro na query do heartbeat:', dbError);
-            // Se der erro, apenas retorna sucesso para não quebrar o frontend
         }
 
         res.json({ msg: 'Status atualizado' });
@@ -58,10 +39,13 @@ exports.updateOnlineStatus = async (req, res) => {
 // Remover usuário do status online (logout)
 exports.removeOnlineStatus = async (req, res) => {
     try {
-        const clientId = req.user.clientId;
+        const userId = req.user.id;
         
-        if (clientId) {
-            await db.query('DELETE FROM user_online_status WHERE client_id = $1', [clientId]);
+        if (userId) {
+            await db.query(
+                'UPDATE online_status SET is_online = false, last_seen = NOW(), updated_at = NOW() WHERE user_id = $1', 
+                [userId]
+            );
         }
 
         res.json({ msg: 'Status removido' });
@@ -74,21 +58,23 @@ exports.removeOnlineStatus = async (req, res) => {
 // Buscar status online de todos os clientes
 exports.getOnlineStatus = async (req, res) => {
     try {
-        // Limpar registros antigos (mais de 5 minutos)
-        await db.query('DELETE FROM user_online_status WHERE last_activity < NOW() - INTERVAL \'5 minutes\'');
+        // Marcar como offline usuários inativos (mais de 3 minutos)
+        await db.query(`
+            UPDATE online_status 
+            SET is_online = false, updated_at = NOW() 
+            WHERE last_seen < NOW() - INTERVAL '3 minutes' AND is_online = true
+        `);
         
         // Buscar clientes com status online
         const result = await db.query(`
             SELECT 
                 c.id,
                 c.company_name,
-                uos.last_activity,
-                CASE 
-                    WHEN uos.last_activity > NOW() - INTERVAL '3 minutes' THEN true
-                    ELSE false
-                END as is_online
+                os.last_seen,
+                COALESCE(os.is_online, false) as is_online
             FROM clients c
-            LEFT JOIN user_online_status uos ON c.id = uos.client_id
+            LEFT JOIN users u ON u.client_id = c.id
+            LEFT JOIN online_status os ON os.user_id = u.id::varchar
             ORDER BY c.company_name
         `);
 

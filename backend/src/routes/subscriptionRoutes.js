@@ -70,10 +70,68 @@ router.post('/setup', authMiddleware, async (req, res) => {
   }
 });
 
+// Sincronizar subscription com dados do client
+const syncSubscriptionWithClient = async (userId) => {
+  try {
+    // Buscar dados do client
+    const clientResult = await pool.query(
+      `SELECT c.license_expires_at, c.license_status 
+       FROM users u 
+       JOIN clients c ON u.client_id = c.id 
+       WHERE u.id = $1`,
+      [userId]
+    );
+    
+    if (clientResult.rows.length === 0) return;
+    
+    const client = clientResult.rows[0];
+    const today = new Date();
+    const expiresAt = client.license_expires_at ? new Date(client.license_expires_at) : null;
+    
+    let plan = 'free';
+    let status = 'active';
+    
+    if (expiresAt && expiresAt > today) {
+      plan = 'premium';
+      status = 'active';
+    } else if (expiresAt && expiresAt <= today) {
+      plan = 'free';
+      status = 'expired';
+    }
+    
+    // Verificar se subscription existe
+    const subResult = await pool.query(
+      'SELECT id FROM subscriptions WHERE user_id = $1',
+      [userId]
+    );
+    
+    if (subResult.rows.length === 0) {
+      // Criar nova subscription
+      await pool.query(
+        'INSERT INTO subscriptions (user_id, plan, status, expires_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)',
+        [userId, plan, status, expiresAt]
+      );
+      console.log(`Subscription criada para usuário ${userId}: ${plan} até ${expiresAt}`);
+    } else {
+      // Atualizar subscription existente
+      await pool.query(
+        'UPDATE subscriptions SET plan = $1, status = $2, expires_at = $3, updated_at = CURRENT_TIMESTAMP WHERE user_id = $4',
+        [plan, status, expiresAt, userId]
+      );
+      console.log(`Subscription sincronizada para usuário ${userId}: ${plan} até ${expiresAt}`);
+    }
+  } catch (error) {
+    console.error('Erro ao sincronizar subscription:', error);
+  }
+};
+
 // Obter plano atual do usuário
 router.get('/current', authMiddleware, async (req, res) => {
   try {
     console.log('Buscando assinatura para usuário:', req.user.id);
+    
+    // Sincronizar antes de buscar
+    await syncSubscriptionWithClient(req.user.id);
     
     const result = await pool.query(
       'SELECT * FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
@@ -107,10 +165,40 @@ router.get('/current', authMiddleware, async (req, res) => {
     
     // Se é premium ativo, retornar como premium
     if (subscription.plan === 'premium' && subscription.status === 'active') {
+      let daysLeft = 999;
+      if (subscription.expires_at) {
+        const expiresAt = new Date(subscription.expires_at);
+        const today = new Date();
+        
+        // Resetar horas para comparar apenas datas
+        today.setHours(0, 0, 0, 0);
+        expiresAt.setHours(0, 0, 0, 0);
+        
+        daysLeft = Math.ceil((expiresAt - today) / (1000 * 60 * 60 * 24));
+        
+        console.log('Debug - Expires at:', expiresAt.toISOString());
+        console.log('Debug - Today:', today.toISOString());
+        console.log('Debug - Days left:', daysLeft);
+        
+        // Se já expirou, marcar como expirado
+        if (daysLeft <= 0) {
+          await pool.query(
+            'UPDATE subscriptions SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2',
+            ['expired', req.user.id]
+          );
+          
+          return res.json({
+            ...subscription,
+            status: 'expired',
+            days_left: 0
+          });
+        }
+      }
+      
       return res.json({
         ...subscription,
         status: 'active',
-        days_left: 999
+        days_left: daysLeft
       });
     }
     
@@ -351,6 +439,79 @@ router.post('/confirm-payment', authMiddleware, async (req, res) => {
   }
 });
 
+// Refresh token com dados atualizados
+router.post('/refresh-token', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Buscar dados atualizados do usuário
+    const userResult = await pool.query(
+      'SELECT u.*, c.company_name, c.license_expires_at, c.license_status, COALESCE(c.client_type, \'produtor\') as client_type FROM users u LEFT JOIN clients c ON u.client_id = c.id WHERE u.id = $1',
+      [userId]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Buscar assinatura atual
+    const subscriptionResult = await pool.query(
+      'SELECT * FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [userId]
+    );
+    
+    const payload = {
+      user: {
+        id: user.id,
+        clientId: user.client_id,
+        role: user.role,
+        clientType: user.client_type
+      }
+    };
+    
+    if (user.role === 'funcionario') {
+      payload.user.companyName = user.company_name;
+      
+      // Usar data da subscription se existir, senão usar a antiga
+      if (subscriptionResult.rows.length > 0) {
+        const subscription = subscriptionResult.rows[0];
+        payload.user.licenseExpiresAt = subscription.expires_at;
+        payload.user.licenseStatus = subscription.status === 'active' ? 'Ativo' : 'Vencido';
+        
+        if (subscription.expires_at) {
+          const today = new Date();
+          const expiryDate = new Date(subscription.expires_at);
+          today.setHours(0, 0, 0, 0);
+          expiryDate.setHours(0, 0, 0, 0);
+          const timeDiff = expiryDate.getTime() - today.getTime();
+          payload.user.daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        }
+      } else {
+        payload.user.licenseExpiresAt = user.license_expires_at;
+        payload.user.licenseStatus = user.license_status;
+        
+        if (user.license_expires_at) {
+          const today = new Date();
+          const expiryDate = new Date(user.license_expires_at);
+          today.setHours(0, 0, 0, 0);
+          const timeDiff = expiryDate.getTime() - today.getTime();
+          payload.user.daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        }
+      }
+    }
+    
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
+    
+    res.json({ token, user: payload.user });
+  } catch (error) {
+    console.error('Erro ao refresh token:', error);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 // Webhook do Asaas para receber notificações de pagamento
 router.post('/webhook', async (req, res) => {
   try {
@@ -415,7 +576,17 @@ router.put('/admin/subscriptions/:userId', authMiddleware, async (req, res) => {
     const { userId } = req.params;
     const { plan, status, expires_at } = req.body;
     
-    console.log('Atualizando assinatura:', { userId, plan, status, expires_at });
+    console.log('=== ADMIN UPDATE SUBSCRIPTION ===');
+    console.log('User ID:', userId);
+    console.log('Plan:', plan);
+    console.log('Status:', status);
+    console.log('Expires At:', expires_at);
+    
+    let finalExpiresAt = null;
+    if (expires_at) {
+      finalExpiresAt = expires_at;
+      console.log('Data final para salvar:', finalExpiresAt);
+    }
     
     // Verificar se já existe assinatura
     const existingResult = await pool.query(
@@ -427,16 +598,23 @@ router.put('/admin/subscriptions/:userId', authMiddleware, async (req, res) => {
       // Criar nova assinatura
       await pool.query(
         'INSERT INTO subscriptions (user_id, plan, status, expires_at, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)',
-        [userId, plan, status, expires_at]
+        [userId, plan, status, finalExpiresAt]
       );
       console.log('Nova assinatura criada para usuário:', userId);
     } else {
       // Atualizar assinatura existente
       await pool.query(
         'UPDATE subscriptions SET plan = $1, status = $2, expires_at = $3, updated_at = CURRENT_TIMESTAMP WHERE user_id = $4',
-        [plan, status, expires_at, userId]
+        [plan, status, finalExpiresAt, userId]
       );
       console.log('Assinatura atualizada para usuário:', userId);
+      
+      // Verificar se foi atualizado
+      const verifyResult = await pool.query(
+        'SELECT expires_at FROM subscriptions WHERE user_id = $1',
+        [userId]
+      );
+      console.log('Data salva no banco:', verifyResult.rows[0]?.expires_at);
     }
     
     res.json({ success: true, message: 'Assinatura atualizada com sucesso' });

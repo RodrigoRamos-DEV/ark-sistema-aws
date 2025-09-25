@@ -12,7 +12,6 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
         inscricao_municipal: '',
         responsavel_nome: '',
         email: '',
-        telefone: '',
         whatsapp: '',
         endereco_logradouro: '',
         endereco_numero: '',
@@ -23,33 +22,51 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
         regime_tributario: 'Simples Nacional',
         licenseStatus: 'Ativo',
         licenseExpiresAt: '',
-        vendedorId: '',
         clientType: 'empresa'
     });
-    const [vendedores, setVendedores] = useState([]);
     const isEditMode = !!clientToEdit;
 
     useEffect(() => {
-        const fetchVendedores = async () => {
-            const token = localStorage.getItem('token');
-            try {
-                const response = await axios.get(`${API_URL}/api/partners`, { headers: { 'x-auth-token': token } });
-                setVendedores(response.data);
-            } catch (error) {
-                console.error("Erro ao buscar vendedores", error);
-            }
-        };
         
-        const fetchClientProfile = async (clientId) => {
+        const fetchUserProfile = async (clientId) => {
             const token = localStorage.getItem('token');
+            console.log('Buscando perfil do usuário para cliente:', clientId);
+            
             try {
-                const response = await axios.get(`${API_URL}/api/admin/clients/${clientId}/profile`, { headers: { 'x-auth-token': token } });
-                if (response.data.contact_phone) {
-                    setFormData(prev => ({ ...prev, whatsapp: response.data.contact_phone }));
+                const response = await axios.get(`${API_URL}/api/admin/clients/${clientId}/user-profile`, { 
+                    headers: { 'x-auth-token': token } 
+                });
+                
+                console.log('Resposta do servidor:', response.data);
+                
+                if (response.data) {
+                    const profile = response.data;
+                    console.log('Perfil do usuário encontrado:', profile);
+                    console.log('CEP do perfil:', profile.cep);
+                    console.log('Endereço do perfil:', profile.endereco);
+                    
+                    const newData = {
+                        whatsapp: profile.whatsapp || profile.contact_phone || clientToEdit?.business_phone || '',
+                        endereco_cep: profile.cep || '',
+                        endereco_logradouro: profile.endereco || '',
+                        endereco_numero: profile.numero || '',
+                        endereco_bairro: profile.bairro || '',
+                        endereco_cidade: profile.cidade || '',
+                        endereco_uf: profile.uf || ''
+                    };
+                    
+                    console.log('Dados que serão atualizados:', newData);
+                    
+                    setFormData(prev => ({
+                        ...prev,
+                        ...newData
+                    }));
+                } else {
+                    console.log('Resposta vazia do servidor');
                 }
             } catch (error) {
-                console.log('Perfil não encontrado ou erro:', error);
-                // Se não conseguir buscar do perfil, usar o campo business_phone do cliente
+                console.log('Erro ao buscar perfil:', error.response?.status, error.response?.data);
+                // Fallback para business_phone se não conseguir buscar perfil
                 if (clientToEdit?.business_phone) {
                     setFormData(prev => ({ ...prev, whatsapp: clientToEdit.business_phone }));
                 }
@@ -57,8 +74,9 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
         };
 
         if (isOpen) {
-            fetchVendedores();
             if (isEditMode) {
+
+                
                 setFormData({
                     companyName: clientToEdit.company_name || '',
                     razao_social: clientToEdit.razao_social || '',
@@ -67,7 +85,6 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
                     inscricao_municipal: clientToEdit.inscricao_municipal || '',
                     responsavel_nome: clientToEdit.responsavel_nome || '',
                     email: clientToEdit.email || '',
-                    telefone: clientToEdit.business_phone || '',
                     whatsapp: clientToEdit.contact_phone || clientToEdit.business_phone || '',
                     endereco_logradouro: clientToEdit.endereco_logradouro || '',
                     endereco_numero: clientToEdit.endereco_numero || '',
@@ -78,14 +95,11 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
                     regime_tributario: clientToEdit.regime_tributario || 'Simples Nacional',
                     licenseStatus: clientToEdit.license_status || 'Ativo',
                     licenseExpiresAt: clientToEdit.license_expires_at ? new Date(clientToEdit.license_expires_at).toISOString().split('T')[0] : '',
-                    vendedorId: clientToEdit.vendedor_id || '',
                     clientType: clientToEdit.client_type || 'empresa'
                 });
                 
-                // Buscar WhatsApp do perfil se for produtor
-                if (clientToEdit.client_type === 'produtor') {
-                    fetchClientProfile(clientToEdit.id);
-                }
+                // Buscar dados do perfil do cliente
+                fetchUserProfile(clientToEdit.id);
             } else {
                 setFormData({
                     companyName: '',
@@ -95,7 +109,6 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
                     inscricao_municipal: '',
                     responsavel_nome: '',
                     email: '',
-                    telefone: '',
                     whatsapp: '',
                     endereco_logradouro: '',
                     endereco_numero: '',
@@ -106,7 +119,6 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
                     regime_tributario: 'Simples Nacional',
                     licenseStatus: 'Ativo',
                     licenseExpiresAt: '',
-                    vendedorId: '',
                     clientType: 'empresa'
                 });
             }
@@ -126,9 +138,37 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
 
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-            <div style={{ width: '90%', maxWidth: '700px', height: '80vh', overflowY: 'auto', backgroundColor: 'var(--cor-card)', borderRadius: '12px', boxShadow: 'var(--sombra-card)', padding: '25px' }}>
-                <h2 style={{ margin: '0 0 20px 0', padding: '20px 20px 0 20px' }}>{isEditMode ? 'Editar Cliente' : 'Criar Novo Cliente'}</h2>
-                <form onSubmit={handleSubmit} style={{ padding: '0 20px 20px 20px' }}>
+            <div style={{ width: '90%', maxWidth: '700px', height: '80vh', overflowY: 'auto', backgroundColor: 'var(--cor-card)', borderRadius: '12px', boxShadow: 'var(--sombra-card)', position: 'relative' }}>
+                {/* Botão X fixo no topo */}
+                <button 
+                    onClick={onClose}
+                    style={{
+                        position: 'absolute',
+                        top: '15px',
+                        right: '15px',
+                        background: 'var(--cor-texto-claro)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '35px',
+                        height: '35px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1001,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}
+                    title="Fechar"
+                >
+                    ×
+                </button>
+                
+                <div style={{ padding: '25px' }}>
+                    <h2 style={{ margin: '0 0 20px 0', paddingRight: '50px' }}>{isEditMode ? 'Editar Cliente' : 'Criar Novo Cliente'}</h2>
+                    <form onSubmit={handleSubmit}>
                     
                     <h4>Tipo de Cliente</h4>
                     <div className="input-group">
@@ -140,10 +180,16 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
                     </div>
                     
                     <h4>Informações {formData.clientType === 'empresa' ? 'da Empresa' : 'do Produtor'}</h4>
-                    <div className="grid-2-col">
-                        <div className="input-group"><label>{formData.clientType === 'empresa' ? 'Nome Fantasia' : 'Nome do Produtor'}*</label><input type="text" name="companyName" value={formData.companyName} onChange={handleChange} required /></div>
-                        <div className="input-group"><label>{formData.clientType === 'empresa' ? 'Razão Social' : 'Nome Completo'}*</label><input type="text" name="razao_social" value={formData.razao_social} onChange={handleChange} required /></div>
+                    <div className="input-group">
+                        <label>{formData.clientType === 'empresa' ? 'Nome Fantasia' : 'Nome do Produtor'}*</label>
+                        <input type="text" name="companyName" value={formData.companyName} onChange={handleChange} required />
                     </div>
+                    {formData.clientType === 'empresa' && (
+                        <div className="input-group">
+                            <label>Razão Social*</label>
+                            <input type="text" name="razao_social" value={formData.razao_social} onChange={handleChange} required />
+                        </div>
+                    )}
                     {formData.clientType === 'empresa' && (
                         <div className="grid-2-col">
                             <div className="input-group"><label>CNPJ</label><input type="text" name="cnpj" value={formData.cnpj} onChange={handleChange} /></div>
@@ -156,49 +202,132 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
                         <div className="input-group"><label>Nome do Responsável*</label><input type="text" name="responsavel_nome" value={formData.responsavel_nome} onChange={handleChange} required /></div>
                         <div className="input-group"><label>Email de Login</label><input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Será preenchido pelo usuário" /></div>
                     </div>
-                    <div className="grid-2-col">
+                    {formData.clientType === 'produtor' && (
                         <div className="input-group">
-                            <label>Telefone*</label>
-                            <input type="text" name="telefone" value={formData.telefone} onChange={handleChange} required />
+                            <label>WhatsApp</label>
+                            <input 
+                                type="text" 
+                                name="whatsapp" 
+                                value={formData.whatsapp || ''} 
+                                onChange={() => {}} 
+                                placeholder={formData.whatsapp ? '' : 'Será preenchido pelo perfil do usuário'}
+                                readOnly 
+                                style={{
+                                    backgroundColor: '#f5f5f5',
+                                    color: '#666',
+                                    cursor: 'not-allowed'
+                                }}
+                            />
                         </div>
-                        {formData.clientType === 'produtor' && (
-                            <div className="input-group">
-                                <label>WhatsApp </label>
-                                <input 
-                                    type="text" 
-                                    name="whatsapp" 
-                                    value={formData.whatsapp || 'Será preenchido automaticamente'} 
-                                    readOnly 
-                                    placeholder="Preenchido automaticamente pelo perfil" 
-                                    style={{
-                                        backgroundColor: '#f5f5f5',
-                                        color: '#666',
-                                        cursor: 'not-allowed'
-                                    }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                     <div className="input-group">
-                        <label>Vendedor Responsável (Opcional)</label>
-                        <select name="vendedorId" value={formData.vendedorId} onChange={handleChange}>
-                            <option value="">Nenhum</option>
-                            {vendedores.map(v => <option key={v.id} value={v.id}>{v.name} ({v.porcentagem}%)</option>)}
-                        </select>
-                    </div>
+                    )}
+
                     
                     <h4>Endereço</h4>
+                    <p style={{ fontSize: '0.9em', color: 'var(--cor-texto-claro)', marginBottom: '15px', fontStyle: 'italic' }}>
+                        📍 Os campos de endereço são preenchidos automaticamente pelo usuário em seu perfil. {isEditMode && 'Dados já preenchidos aparecem normalmente.'}
+                    </p>
                     <div className="grid-2-col">
-                        <div className="input-group"><label>CEP</label><input type="text" name="endereco_cep" value={formData.endereco_cep} onChange={handleChange} /></div>
-                        <div className="input-group"><label>Logradouro (Rua, Av.)</label><input type="text" name="endereco_logradouro" value={formData.endereco_logradouro} onChange={handleChange} /></div>
+                        <div className="input-group">
+                            <label>CEP</label>
+                            <input 
+                                type="text" 
+                                name="endereco_cep" 
+                                value={formData.endereco_cep || ''} 
+                                onChange={formData.endereco_cep ? handleChange : () => {}}
+                                placeholder={formData.endereco_cep ? '' : 'Preenchido pelo usuário'}
+                                readOnly={!formData.endereco_cep}
+                                style={{
+                                    backgroundColor: formData.endereco_cep ? 'var(--cor-card)' : '#f5f5f5',
+                                    color: formData.endereco_cep ? 'var(--cor-texto)' : '#666',
+                                    cursor: formData.endereco_cep ? 'default' : 'not-allowed'
+                                }}
+                            />
+                        </div>
+                        <div className="input-group">
+                            <label>Logradouro (Rua, Av.)</label>
+                            <input 
+                                type="text" 
+                                name="endereco_logradouro" 
+                                value={formData.endereco_logradouro || ''} 
+                                onChange={formData.endereco_logradouro ? handleChange : () => {}}
+                                placeholder={formData.endereco_logradouro ? '' : 'Preenchido pelo usuário'}
+                                readOnly={!formData.endereco_logradouro}
+                                style={{
+                                    backgroundColor: formData.endereco_logradouro ? 'var(--cor-card)' : '#f5f5f5',
+                                    color: formData.endereco_logradouro ? 'var(--cor-texto)' : '#666',
+                                    cursor: formData.endereco_logradouro ? 'default' : 'not-allowed'
+                                }}
+                            />
+                        </div>
                     </div>
                     <div className="grid-2-col">
-                        <div className="input-group"><label>Número</label><input type="text" name="endereco_numero" value={formData.endereco_numero} onChange={handleChange} /></div>
-                        <div className="input-group"><label>Bairro</label><input type="text" name="endereco_bairro" value={formData.endereco_bairro} onChange={handleChange} /></div>
+                        <div className="input-group">
+                            <label>Número</label>
+                            <input 
+                                type="text" 
+                                name="endereco_numero" 
+                                value={formData.endereco_numero || ''} 
+                                onChange={formData.endereco_numero ? handleChange : () => {}}
+                                placeholder={formData.endereco_numero ? '' : 'Preenchido pelo usuário'}
+                                readOnly={!formData.endereco_numero}
+                                style={{
+                                    backgroundColor: formData.endereco_numero ? 'var(--cor-card)' : '#f5f5f5',
+                                    color: formData.endereco_numero ? 'var(--cor-texto)' : '#666',
+                                    cursor: formData.endereco_numero ? 'default' : 'not-allowed'
+                                }}
+                            />
+                        </div>
+                        <div className="input-group">
+                            <label>Bairro</label>
+                            <input 
+                                type="text" 
+                                name="endereco_bairro" 
+                                value={formData.endereco_bairro || ''} 
+                                onChange={formData.endereco_bairro ? handleChange : () => {}}
+                                placeholder={formData.endereco_bairro ? '' : 'Preenchido pelo usuário'}
+                                readOnly={!formData.endereco_bairro}
+                                style={{
+                                    backgroundColor: formData.endereco_bairro ? 'var(--cor-card)' : '#f5f5f5',
+                                    color: formData.endereco_bairro ? 'var(--cor-texto)' : '#666',
+                                    cursor: formData.endereco_bairro ? 'default' : 'not-allowed'
+                                }}
+                            />
+                        </div>
                     </div>
                     <div className="grid-2-col">
-                        <div className="input-group"><label>Cidade</label><input type="text" name="endereco_cidade" value={formData.endereco_cidade} onChange={handleChange} /></div>
-                        <div className="input-group"><label>UF</label><input type="text" name="endereco_uf" value={formData.endereco_uf} onChange={handleChange} maxLength="2" /></div>
+                        <div className="input-group">
+                            <label>Cidade</label>
+                            <input 
+                                type="text" 
+                                name="endereco_cidade" 
+                                value={formData.endereco_cidade || ''} 
+                                onChange={formData.endereco_cidade ? handleChange : () => {}}
+                                placeholder={formData.endereco_cidade ? '' : 'Preenchido pelo usuário'}
+                                readOnly={!formData.endereco_cidade}
+                                style={{
+                                    backgroundColor: formData.endereco_cidade ? 'var(--cor-card)' : '#f5f5f5',
+                                    color: formData.endereco_cidade ? 'var(--cor-texto)' : '#666',
+                                    cursor: formData.endereco_cidade ? 'default' : 'not-allowed'
+                                }}
+                            />
+                        </div>
+                        <div className="input-group">
+                            <label>UF</label>
+                            <input 
+                                type="text" 
+                                name="endereco_uf" 
+                                value={formData.endereco_uf || ''} 
+                                onChange={formData.endereco_uf ? handleChange : () => {}}
+                                placeholder={formData.endereco_uf ? '' : 'Preenchido pelo usuário'}
+                                readOnly={!formData.endereco_uf}
+                                maxLength="2"
+                                style={{
+                                    backgroundColor: formData.endereco_uf ? 'var(--cor-card)' : '#f5f5f5',
+                                    color: formData.endereco_uf ? 'var(--cor-texto)' : '#666',
+                                    cursor: formData.endereco_uf ? 'default' : 'not-allowed'
+                                }}
+                            />
+                        </div>
                     </div>
 
                     <h4>Dados {formData.clientType === 'empresa' ? 'Fiscais e' : 'de'} Licença</h4>
@@ -225,7 +354,8 @@ function ClientModal({ isOpen, onClose, onSave, clientToEdit }) {
                             <Icons.Save /> Salvar
                         </button>
                     </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     );

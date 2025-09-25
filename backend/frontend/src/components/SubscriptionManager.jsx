@@ -229,10 +229,13 @@ const SubscriptionManager = () => {
               <input
                 type="date"
                 value={editingSubscription.expires_at ? editingSubscription.expires_at.split('T')[0] : ''}
-                onChange={(e) => setEditingSubscription({
-                  ...editingSubscription,
-                  expires_at: e.target.value ? new Date(e.target.value).toISOString() : null
-                })}
+                onChange={(e) => {
+                  console.log('Data selecionada:', e.target.value);
+                  setEditingSubscription({
+                    ...editingSubscription,
+                    expires_at: e.target.value ? e.target.value + 'T00:00:00.000Z' : null
+                  });
+                }}
                 style={{ marginTop: '5px' }}
               />
             </div>

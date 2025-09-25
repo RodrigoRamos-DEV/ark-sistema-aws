@@ -26,7 +26,7 @@ import WhatsAppSupport from './components/WhatsAppSupport';
 
 import ClientTypeRouter from './components/ClientTypeRouter';
 import EmpresaDashboard from './components/EmpresaDashboard';
-import TestPaymentModal from './components/TestPaymentModal';
+
 import PlanosPage from './components/PlanosPage';
 
 
@@ -89,7 +89,7 @@ function App() {
             </Route>
           </Route>
 
-          <Route path="/teste-pagamento" element={<TestPaymentModal />} />
+
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>

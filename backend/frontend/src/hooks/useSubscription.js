@@ -9,6 +9,25 @@ export const useSubscription = () => {
     fetchSubscription();
   }, []);
 
+  const refreshToken = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/subscription/refresh-token`, {
+        method: 'POST',
+        headers: { 'x-auth-token': token }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('token', data.token);
+        return true;
+      }
+    } catch (error) {
+      console.error('Erro ao refresh token:', error);
+    }
+    return false;
+  };
+
   const fetchSubscription = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -21,6 +40,20 @@ export const useSubscription = () => {
         headers: { 'x-auth-token': token }
       });
       
+      if (response.status === 401) {
+        // Token expirado, tentar refresh
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          // Tentar novamente com token atualizado
+          return fetchSubscription();
+        } else {
+          // Redirecionar para login
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          return;
+        }
+      }
+      
       if (response.ok) {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
@@ -28,7 +61,6 @@ export const useSubscription = () => {
           setSubscription(data);
         } else {
           console.warn('API retornou HTML em vez de JSON');
-          // Definir assinatura padrão para evitar erros
           setSubscription({ plan: 'free', status: 'active' });
         }
       } else {
@@ -37,7 +69,6 @@ export const useSubscription = () => {
       }
     } catch (error) {
       console.error('Erro ao buscar assinatura:', error);
-      // Definir assinatura padrão em caso de erro
       setSubscription({ plan: 'free', status: 'active' });
     } finally {
       setLoading(false);

@@ -11,36 +11,92 @@ const ensureAdmin = (req, res, next) => {
 
 const getAllClients = async (req, res) => {
     try {
-        const query = `
+        const { search, sortBy, sortOrder, filterPlan, filterStatus } = req.query;
+        
+        let whereClause = '';
+        let orderClause = 'ORDER BY c.company_name ASC';
+        const queryParams = [];
+        
+        // Busca por nome ou email
+        if (search) {
+            whereClause = 'WHERE (LOWER(c.company_name) LIKE LOWER($1) OR LOWER(u.email) LIKE LOWER($1))';
+            queryParams.push(`%${search}%`);
+        }
+        
+        // Filtro por plano
+        if (filterPlan) {
+            const planFilter = whereClause ? ' AND ' : ' WHERE ';
+            whereClause += `${planFilter}COALESCE(s.plan, 'free') = $${queryParams.length + 1}`;
+            queryParams.push(filterPlan);
+        }
+        
+        // Filtro por status
+        if (filterStatus) {
+            const statusFilter = whereClause ? ' AND ' : ' WHERE ';
+            if (filterStatus === 'online') {
+                whereClause += `${statusFilter}COALESCE(os.is_online, false) = true`;
+            } else {
+                whereClause += `${statusFilter}COALESCE(s.status, 'active') = $${queryParams.length + 1}`;
+                queryParams.push(filterStatus);
+            }
+        }
+        
+        // Ordenação
+        if (sortBy) {
+            const validSorts = {
+                'name': 'c.company_name',
+                'email': 'u.email',
+                'expires': 'c.license_expires_at',
+                'plan': 's.plan',
+                'status': 's.status'
+            };
+            
+            if (validSorts[sortBy]) {
+                const direction = sortOrder === 'desc' ? 'DESC' : 'ASC';
+                orderClause = `ORDER BY ${validSorts[sortBy]} ${direction}`;
+            }
+        }
+        
+        const finalQuery = `
             SELECT 
                 c.id, c.company_name, c.razao_social, c.cnpj, c.inscricao_estadual,
-                c.inscricao_municipal, c.responsavel_nome, c.business_phone, c.contact_phone,
+                c.inscricao_municipal, c.responsavel_nome, c.business_phone,
                 c.endereco_logradouro, c.endereco_numero, c.endereco_bairro,
                 c.endereco_cidade, c.endereco_uf, c.endereco_cep,
                 c.regime_tributario, c.license_expires_at, c.vendedor_id,
                 COALESCE(c.client_type, 'produtor') as client_type,
-                v.name as partner_name,
+                COALESCE(v.name, 'N/A') as partner_name,
                 CASE
                     WHEN c.license_expires_at < CURRENT_DATE THEN 'Vencido'
                     WHEN c.license_expires_at - CURRENT_DATE <= 5 THEN 'A Vencer'
                     ELSE 'Ativo'
                 END AS license_status,
                 u.email,
-                s.plan as subscription_plan,
-                s.status as subscription_status,
+                COALESCE(s.plan, 'free') as subscription_plan,
+                COALESCE(s.status, 'active') as subscription_status,
                 s.trial_ends_at,
-                s.expires_at as subscription_expires_at
+                s.expires_at as subscription_expires_at,
+                COALESCE(os.is_online, false) as is_online,
+                os.last_seen
             FROM clients c
             LEFT JOIN vendedores v ON c.vendedor_id = v.id
             LEFT JOIN users u ON u.client_id = c.id
-            LEFT JOIN subscriptions s ON s.user_id = u.id::text
-            ORDER BY c.company_name;
+            LEFT JOIN subscriptions s ON s.user_id = u.id::varchar
+            LEFT JOIN online_status os ON os.user_id = u.id::varchar
+            ${whereClause}
+            ${orderClause}
         `;
-        const result = await db.query(query);
+        
+        console.log('Query:', finalQuery);
+        console.log('Params:', queryParams);
+        
+        const result = await db.query(finalQuery, queryParams);
         res.json(result.rows);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: 'Erro no servidor ao buscar clientes.' });
+        console.error('Erro detalhado:', err);
+        console.error('Query que falhou:', finalQuery);
+        console.error('Parâmetros:', queryParams);
+        res.status(500).json({ error: 'Erro no servidor ao buscar clientes.', details: err.message });
     }
 };
 
@@ -130,18 +186,28 @@ const updateClient = async (req, res) => {
             return res.status(404).json({ error: 'Cliente não encontrado.' });
         }
         
-        // Se a data de vencimento foi alterada para uma data passada, expirar assinatura
-        if (licenseExpiresAt && new Date(licenseExpiresAt) < new Date()) {
+        // Atualizar também a tabela subscriptions com a nova data
+        if (licenseExpiresAt) {
+            const isExpired = new Date(licenseExpiresAt) < new Date();
+            
             await db.query(
                 `UPDATE subscriptions SET 
-                    plan = 'free', 
-                    status = 'expired', 
+                    plan = $1, 
+                    status = $2, 
+                    expires_at = $3,
                     updated_at = CURRENT_TIMESTAMP 
                 WHERE user_id IN (
-                    SELECT u.id::text FROM users u WHERE u.client_id = $1
+                    SELECT u.id::text FROM users u WHERE u.client_id = $4
                 )`,
-                [id]
+                [
+                    isExpired ? 'free' : 'premium',
+                    isExpired ? 'expired' : 'active', 
+                    licenseExpiresAt,
+                    id
+                ]
             );
+            
+            console.log(`Subscription atualizada para cliente ${id}: expires_at = ${licenseExpiresAt}`);
         }
         
         res.json(result.rows[0]);
@@ -277,6 +343,48 @@ const getClientProfile = async (req, res) => {
     }
 };
 
+const getUserProfile = async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Buscar dados do cliente (perfil)
+        const clientResult = await db.query(
+            `SELECT contact_phone, cep, endereco_rua, endereco_numero, 
+                    endereco_bairro, endereco_cidade, endereco_uf 
+             FROM clients WHERE id = $1`,
+            [id]
+        );
+        
+        if (clientResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Cliente não encontrado.' });
+        }
+        
+        const client = clientResult.rows[0];
+        console.log('Dados do cliente encontrado:', {
+            contact_phone: client.contact_phone,
+            cep: client.cep,
+            endereco_rua: client.endereco_rua,
+            endereco_numero: client.endereco_numero,
+            endereco_bairro: client.endereco_bairro,
+            endereco_cidade: client.endereco_cidade,
+            endereco_uf: client.endereco_uf
+        });
+        
+        res.json({
+            whatsapp: client.contact_phone,
+            contact_phone: client.contact_phone,
+            cep: client.cep,
+            endereco: client.endereco_rua,
+            numero: client.endereco_numero,
+            bairro: client.endereco_bairro,
+            cidade: client.endereco_cidade,
+            uf: client.endereco_uf
+        });
+    } catch (err) {
+        console.error('Erro ao buscar perfil do cliente:', err.message);
+        res.status(500).json({ error: 'Erro no servidor ao buscar perfil do cliente.' });
+    }
+};
+
 const renewSubscription = async (req, res) => {
     const { id } = req.params;
     try {
@@ -320,6 +428,51 @@ const renewSubscription = async (req, res) => {
     }
 };
 
+const getNotifications = async (req, res) => {
+    try {
+        const result = await db.query(
+            'SELECT * FROM notifications ORDER BY created_at DESC'
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Erro no servidor ao buscar notificações.' });
+    }
+};
+
+const createNotification = async (req, res) => {
+    const { title, message, type, target_audience } = req.body;
+    
+    if (!title || !message) {
+        return res.status(400).json({ error: 'Título e mensagem são obrigatórios.' });
+    }
+    
+    try {
+        const result = await db.query(
+            'INSERT INTO notifications (title, message, type, target_audience) VALUES ($1, $2, $3, $4) RETURNING *',
+            [title, message, type || 'info', target_audience || 'all']
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Erro no servidor ao criar notificação.' });
+    }
+};
+
+const deleteNotification = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await db.query('DELETE FROM notifications WHERE id = $1', [id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Notificação não encontrada.' });
+        }
+        res.json({ msg: 'Notificação removida com sucesso.' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Erro no servidor ao remover notificação.' });
+    }
+};
+
 module.exports = {
     ensureAdmin,
     getAllClients,
@@ -331,5 +484,9 @@ module.exports = {
     saveReportTemplate,
     getClientToken,
     getClientProfile,
-    renewSubscription
+    getUserProfile,
+    renewSubscription,
+    getNotifications,
+    createNotification,
+    deleteNotification
 };

@@ -38,6 +38,11 @@ function AdminPage() {
     const [dashboardData, setDashboardData] = useState(null);
     const [activeTab, setActiveTab] = useState('produtores');
     const [onlineStatus, setOnlineStatus] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState('name');
+    const [sortOrder, setSortOrder] = useState('asc');
+    const [filterPlan, setFilterPlan] = useState('');
+    const [filterStatus, setFilterStatus] = useState('');
 
     const ADMIN_API_URL = `${API_URL}/api/admin`;
     const token = localStorage.getItem('token');
@@ -45,8 +50,15 @@ function AdminPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (sortBy) params.append('sortBy', sortBy);
+            if (sortOrder) params.append('sortOrder', sortOrder);
+            if (filterPlan) params.append('filterPlan', filterPlan);
+            if (filterStatus) params.append('filterStatus', filterStatus);
+            
             const [clientsResponse, dashboardResponse, onlineResponse] = await Promise.all([
-                axios.get(`${ADMIN_API_URL}/clients`, { headers: { 'x-auth-token': token } }),
+                axios.get(`${ADMIN_API_URL}/clients?${params.toString()}`, { headers: { 'x-auth-token': token } }),
                 axios.get(`${ADMIN_API_URL}/dashboard`, { headers: { 'x-auth-token': token } }),
                 axios.get(`${API_URL}/api/online/status`, { headers: { 'x-auth-token': token } })
             ]);
@@ -67,6 +79,15 @@ function AdminPage() {
         }, 30000);
         return () => clearInterval(interval);
     }, []);
+    
+    // Atualizar dados quando filtros mudarem
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchData();
+        }, 300); // Debounce de 300ms
+        
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm, sortBy, sortOrder, filterPlan, filterStatus]);
 
     const handleSaveClient = async (formData, clientId) => {
         try {
@@ -300,17 +321,247 @@ function AdminPage() {
                         </>
                     )}
                     <div className="card">
-                        <h3>Clientes Cadastrados</h3>
+                        <h3 style={{ marginBottom: '20px' }}>Clientes Cadastrados</h3>
+                        
+                        {/* Container dos Filtros */}
+                        <div className="filters-container" style={{
+                            background: 'var(--cor-fundo-secundario)',
+                            padding: '20px',
+                            borderRadius: '8px',
+                            marginBottom: '20px',
+                            border: '1px solid var(--cor-borda)'
+                        }}>
+                            {/* Linha 1: Busca */}
+                            <div style={{
+                                display: 'flex',
+                                gap: '10px',
+                                marginBottom: '15px',
+                                alignItems: 'center',
+                                flexWrap: 'wrap'
+                            }}>
+                                <div style={{ flex: '1', minWidth: '250px' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="🔍 Buscar por nome ou email..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 15px',
+                                            borderRadius: '6px',
+                                            border: '1px solid var(--cor-borda)',
+                                            fontSize: '14px',
+                                            backgroundColor: 'var(--cor-card)'
+                                        }}
+                                    />
+                                </div>
+                                <button 
+                                    onClick={fetchData}
+                                    className="btn"
+                                    style={{
+                                        padding: '10px 20px',
+                                        minWidth: '100px',
+                                        backgroundColor: 'var(--cor-primaria)',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: 'white',
+                                        cursor: 'pointer',
+                                        fontSize: '14px'
+                                    }}
+                                >
+                                    Buscar
+                                </button>
+                            </div>
+                            
+                            {/* Linha 2: Filtros */}
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                                gap: '15px',
+                                alignItems: 'end'
+                            }}>
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        color: 'var(--cor-texto-label)',
+                                        marginBottom: '5px'
+                                    }}>Plano</label>
+                                    <select 
+                                        value={filterPlan} 
+                                        onChange={(e) => setFilterPlan(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            borderRadius: '6px',
+                                            border: '1px solid var(--cor-borda)',
+                                            backgroundColor: 'var(--cor-card)',
+                                            fontSize: '14px'
+                                        }}
+                                    >
+                                        <option value="">Todos os planos</option>
+                                        <option value="premium">💎 Premium</option>
+                                        <option value="free">🆓 Free</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        color: 'var(--cor-texto-label)',
+                                        marginBottom: '5px'
+                                    }}>Status</label>
+                                    <select 
+                                        value={filterStatus} 
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            borderRadius: '6px',
+                                            border: '1px solid var(--cor-borda)',
+                                            backgroundColor: 'var(--cor-card)',
+                                            fontSize: '14px'
+                                        }}
+                                    >
+                                        <option value="">Todos os status</option>
+                                        <option value="active">✅ Ativo</option>
+                                        <option value="expired">❌ Expirado</option>
+                                        <option value="online">🟢 Online</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        color: 'var(--cor-texto-label)',
+                                        marginBottom: '5px'
+                                    }}>Ordenar por</label>
+                                    <select 
+                                        value={sortBy} 
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            borderRadius: '6px',
+                                            border: '1px solid var(--cor-borda)',
+                                            backgroundColor: 'var(--cor-card)',
+                                            fontSize: '14px'
+                                        }}
+                                    >
+                                        <option value="name">📝 Nome</option>
+                                        <option value="email">📧 Email</option>
+                                        <option value="expires">📅 Vencimento</option>
+                                        <option value="plan">💎 Plano</option>
+                                        <option value="status">🔄 Status</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        color: 'var(--cor-texto-label)',
+                                        marginBottom: '5px'
+                                    }}>Direção</label>
+                                    <select 
+                                        value={sortOrder} 
+                                        onChange={(e) => setSortOrder(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            borderRadius: '6px',
+                                            border: '1px solid var(--cor-borda)',
+                                            backgroundColor: 'var(--cor-card)',
+                                            fontSize: '14px'
+                                        }}
+                                    >
+                                        <option value="asc">↑ Crescente</option>
+                                        <option value="desc">↓ Decrescente</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <button 
+                                        onClick={() => {
+                                            setSearchTerm('');
+                                            setFilterPlan('');
+                                            setFilterStatus('');
+                                            setSortBy('name');
+                                            setSortOrder('asc');
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            background: 'var(--cor-texto-claro)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            fontWeight: '500'
+                                        }}
+                                    >
+                                        🔄 Limpar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <style>{`
+                            @media (max-width: 768px) {
+                                .filters-container {
+                                    padding: 15px !important;
+                                }
+                                
+                                .filters-container > div:first-child {
+                                    flex-direction: column !important;
+                                    align-items: stretch !important;
+                                }
+                                
+                                .filters-container > div:first-child > div {
+                                    min-width: 100% !important;
+                                }
+                                
+                                .filters-container > div:last-child {
+                                    grid-template-columns: 1fr 1fr !important;
+                                    gap: 10px !important;
+                                }
+                            }
+                            
+                            @media (max-width: 480px) {
+                                .filters-container > div:last-child {
+                                    grid-template-columns: 1fr !important;
+                                }
+                            }
+                            
+                            .filters-container select:focus,
+                            .filters-container input:focus {
+                                outline: none;
+                                border-color: var(--cor-primaria);
+                                box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+                            }
+                            
+                            .filters-container button:hover {
+                                opacity: 0.9;
+                                transform: translateY(-1px);
+                            }
+                        `}</style>
+                        
                         {loading ? <p>A carregar lista de clientes...</p> : (
                             <div style={{overflowX: 'auto'}}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
                                     <thead>
                                         <tr style={{ borderBottom: '2px solid var(--cor-primaria)' }}>
-                                            <th style={{ padding: '10px', textAlign: 'left' }}>Nome</th>
-                                            <th style={{ padding: '10px', textAlign: 'left' }}>Email</th>
-                                            <th style={{ padding: '10px', textAlign: 'left' }}>Contato</th>
-                                            <th style={{ padding: '10px', textAlign: 'left' }}>Vencimento</th>
-                                            <th style={{ padding: '10px', textAlign: 'left' }}>Assinatura</th>
+                                            <th style={{ padding: '10px', textAlign: 'left', cursor: 'pointer' }} onClick={() => { setSortBy('name'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }}>Nome {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+                                            <th style={{ padding: '10px', textAlign: 'left', cursor: 'pointer' }} onClick={() => { setSortBy('email'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }}>Email {sortBy === 'email' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+                                            <th style={{ padding: '10px', textAlign: 'left', cursor: 'pointer' }} onClick={() => { setSortBy('expires'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }}>Vencimento {sortBy === 'expires' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
+                                            <th style={{ padding: '10px', textAlign: 'left', cursor: 'pointer' }} onClick={() => { setSortBy('plan'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }}>Assinatura {sortBy === 'plan' && (sortOrder === 'asc' ? '↑' : '↓')}</th>
                                             <th style={{ padding: '10px', textAlign: 'center' }}>Online</th>
                                             <th style={{ padding: '10px', textAlign: 'center' }}>Ações</th>
                                         </tr>
@@ -339,12 +590,6 @@ function AdminPage() {
                                                         <span style={{ color: '#ff9800', fontSize: '0.9em' }}>
                                                             🔑 Token pendente
                                                         </span>
-                                                    )}
-                                                </td>
-                                                <td style={{ padding: '10px' }}>
-                                                    {client.partner_name || 'N/A'}
-                                                    {client.client_type !== 'empresa' && client.whatsapp && (
-                                                        <div style={{ fontSize: '0.8em', color: '#666' }}>WhatsApp: {client.whatsapp}</div>
                                                     )}
                                                 </td>
                                                 <td style={{ padding: '10px' }}>{client.license_expires_at ? new Date(client.license_expires_at).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A'}</td>

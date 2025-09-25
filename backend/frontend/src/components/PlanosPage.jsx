@@ -10,18 +10,20 @@ const PlanosPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('PlanosPage useEffect executado');
     fetchCurrentPlan();
   }, []);
 
   const fetchCurrentPlan = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/subscription/current`, {
+      const response = await fetch(`${API_URL}/api/subscription/current?t=${Date.now()}`, {
         headers: { 'x-auth-token': token }
       });
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Dados recebidos da API:', data);
         setCurrentPlan(data);
       }
     } catch (error) {
@@ -84,6 +86,29 @@ const PlanosPage = () => {
       {currentPlan && (
         <div className="current-plan-info">
           <h3>Plano Atual: {currentPlan.plan === 'free' ? 'Gratuito' : 'Premium'}</h3>
+          <button 
+            onClick={() => {
+              console.log('=== DEBUG CURRENT PLAN ===');
+              console.log('Current plan object:', currentPlan);
+              console.log('Plan:', currentPlan?.plan);
+              console.log('Status:', currentPlan?.status);
+              console.log('Expires at:', currentPlan?.expires_at);
+              console.log('Days left:', currentPlan?.days_left);
+              console.log('Type of days_left:', typeof currentPlan?.days_left);
+              fetchCurrentPlan();
+            }}
+            style={{ 
+              background: 'var(--cor-primaria)', 
+              color: 'white', 
+              border: 'none', 
+              padding: '5px 10px', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              marginBottom: '10px'
+            }}
+          >
+            🔄 Atualizar Dados
+          </button>
           {currentPlan.status === 'trial' && (
             <p className="trial-info">
               🎉 Período de teste: {currentPlan.days_left} dias restantes
@@ -94,15 +119,19 @@ const PlanosPage = () => {
               ⚠️ Seu período de teste expirou. Agora você tem acesso apenas à Feira.
             </p>
           )}
-          {currentPlan.plan === 'premium' && currentPlan.expires_at && (
-            <p className="premium-info">
-              💎 Plano Premium ativo até: {new Date(currentPlan.expires_at).toLocaleDateString('pt-BR')}
-            </p>
-          )}
-          {currentPlan.plan === 'premium' && currentPlan.days_left && (
-            <p className={currentPlan.days_left <= 7 ? 'warning-info' : 'premium-info'}>
-              {currentPlan.days_left <= 7 ? '⚠️' : '📅'} {currentPlan.days_left} dias restantes
-            </p>
+          {currentPlan.plan === 'premium' && (
+            <div>
+              {currentPlan.expires_at && (
+                <p className="premium-info">
+                  💎 Plano Premium ativo até: {new Date(currentPlan.expires_at).toLocaleDateString('pt-BR')}
+                </p>
+              )}
+              {currentPlan.days_left !== undefined && currentPlan.days_left !== null && (
+                <p className={currentPlan.days_left <= 7 ? 'warning-info' : 'premium-info'}>
+                  {currentPlan.days_left <= 7 ? '⚠️' : '📅'} {currentPlan.days_left} dias restantes
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}

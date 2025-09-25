@@ -65,16 +65,39 @@ exports.login = async (req, res) => {
     };
     if (user.role === 'funcionario') {
         payload.user.companyName = user.company_name;
-        payload.user.licenseExpiresAt = user.license_expires_at;
-        payload.user.licenseStatus = user.license_status;
         
-        // Calcular dias restantes para trial/licença
-        if (user.license_expires_at) {
-            const today = new Date();
-            const expiryDate = new Date(user.license_expires_at);
-            today.setHours(0, 0, 0, 0);
-            const timeDiff = expiryDate.getTime() - today.getTime();
-            payload.user.daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        // Verificar se existe subscription
+        const subscriptionResult = await db.query(
+            'SELECT * FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+            [user.id]
+        );
+        
+        if (subscriptionResult.rows.length > 0) {
+            // Usar dados da subscription
+            const subscription = subscriptionResult.rows[0];
+            payload.user.licenseExpiresAt = subscription.expires_at;
+            payload.user.licenseStatus = subscription.status === 'active' ? 'Ativo' : 'Vencido';
+            
+            if (subscription.expires_at) {
+                const today = new Date();
+                const expiryDate = new Date(subscription.expires_at);
+                today.setHours(0, 0, 0, 0);
+                expiryDate.setHours(0, 0, 0, 0);
+                const timeDiff = expiryDate.getTime() - today.getTime();
+                payload.user.daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            }
+        } else {
+            // Usar dados antigos
+            payload.user.licenseExpiresAt = user.license_expires_at;
+            payload.user.licenseStatus = user.license_status;
+            
+            if (user.license_expires_at) {
+                const today = new Date();
+                const expiryDate = new Date(user.license_expires_at);
+                today.setHours(0, 0, 0, 0);
+                const timeDiff = expiryDate.getTime() - today.getTime();
+                payload.user.daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            }
         }
     }
 
